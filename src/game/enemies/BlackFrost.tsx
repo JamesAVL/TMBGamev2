@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -122,6 +122,14 @@ export function BlackFrost() {
   const lastSeenHitAt = useRef(-Infinity);
   const flashUntil = useRef(0);
   const toPlayer = useMemo(() => new THREE.Vector3(), []);
+
+  // Deregister the body handle on unmount — a stale handle to a destroyed
+  // rapier body crashes any loop that touches it (the post-boss freeze).
+  useEffect(() => {
+    return () => {
+      runtime.enemyBodies.delete(ID);
+    };
+  }, []);
 
   const entryExists = useCombatStore((s) => Boolean(s.enemies[ID]));
   const aggro = useCombatStore((s) => s.enemies[ID]?.aggro ?? false);
