@@ -175,7 +175,7 @@ export function MeleeEnemy({
       const targetYaw = Math.atan2(toPlayer.x, toPlayer.z);
       let dYaw = targetYaw - group.rotation.y;
       dYaw = Math.atan2(Math.sin(dYaw), Math.cos(dYaw));
-      group.rotation.y += dYaw * Math.min(1, delta * 10);
+      group.rotation.y += dYaw * Math.min(1, delta * 14);
     }
 
     // Windup telegraph: lean in, eye flares
@@ -206,6 +206,8 @@ export function MeleeEnemy({
         if (!playerDead && dist < tuning.aggroRange) {
           ai.current = 'chase';
           useCombatStore.getState().setAggro(id, true);
+          // snap to face the player instantly — no backwards-walking turn
+          if (dist > 0.01) group.rotation.y = Math.atan2(toPlayer.x, toPlayer.z);
         }
         break;
       }

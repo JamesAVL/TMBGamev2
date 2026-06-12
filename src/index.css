@@ -524,3 +524,25 @@ body,
   padding: 5px 10px;
   transform: translateY(-4px);
 }
+
+/* Floating combat text */
+.dmg-pop {
+  pointer-events: none;
+  user-select: none;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
+  white-space: nowrap;
+}
+
+.dmg-pop.gold {
+  color: #ffd76e;
+  font-size: 17px;
+}
+
+.dmg-pop.info {
+  color: #9fd4ff;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+}
