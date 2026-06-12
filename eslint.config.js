@@ -22,4 +22,13 @@ export default tseslint.config(
       globals: globals.browser,
     },
   },
+  {
+    // R3F frame loops mutate three.js objects held in refs by design
+    // (materials, transforms); the compiler-alignment immutability rule
+    // false-positives on that pattern. Everything else stays strict.
+    files: ['src/game/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/immutability': 'off',
+    },
+  },
 );

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
+import { ensureAudio } from '../audio/sfx';
 import { CLASSIC_CONTROLS } from '../debug/flags';
 
 // Click the canvas to capture the mouse for steering; Esc (browser-native)
@@ -13,6 +14,7 @@ export function PointerLockOnClick() {
     if (CLASSIC_CONTROLS) return;
     const el = gl.domElement;
     const requestLock = () => {
+      ensureAudio(); // user gesture — unlocks the Web Audio context
       if (document.pointerLockElement !== el) el.requestPointerLock();
     };
     el.addEventListener('click', requestLock);
