@@ -92,4 +92,38 @@ export const sfx = {
     tone(c, m, 'triangle', 120, 55, 0.16, 0.55);
     tone(c, m, 'triangle', 80, 45, 0.22, 0.35);
   },
+  clink() {
+    // swipe bounced off something invulnerable
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sine', 1800, 1200, 0.07, 0.25);
+  },
+  gust() {
+    const { ctx: c, master: m } = audio();
+    noise(c, m, 1.3, 0.18, 200, 700);
+  },
+  freezeSnap() {
+    const { ctx: c, master: m } = audio();
+    noise(c, m, 0.12, 0.4, 3500, 900);
+    tone(c, m, 'sine', 900, 300, 0.12, 0.2);
+  },
+  ember() {
+    const { ctx: c, master: m } = audio();
+    noise(c, m, 0.35, 0.4, 500, 2200);
+    tone(c, m, 'sawtooth', 140, 60, 0.3, 0.3);
+  },
+  waveSting() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'square', 220, 440, 0.18, 0.2);
+    tone(c, m, 'square', 165, 330, 0.24, 0.15);
+  },
+  bossDown() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sawtooth', 220, 28, 1.1, 0.5);
+    noise(c, m, 0.8, 0.3, 900, 100);
+  },
+  portal() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sine', 300, 900, 0.4, 0.3);
+    tone(c, m, 'sine', 450, 1350, 0.4, 0.2);
+  },
 };

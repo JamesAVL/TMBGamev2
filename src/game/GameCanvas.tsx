@@ -5,13 +5,16 @@ import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
 import { DEBUG } from '../debug/flags';
 import { useCombatStore } from '../stores/combatStore';
+import { useSceneStore } from '../stores/sceneStore';
 import { keyboardMap } from './controls';
 import { Effects } from './Effects';
 import { Enemies } from './enemies/Enemies';
 import { PointerLockOnClick } from './PointerLockOnClick';
 import { Player } from './player/Player';
+import { SceneManager } from './SceneManager';
 import { Lights } from './world/Lights';
 import { Playground } from './world/Playground';
+import { TundraRealm } from './world/tundra/TundraRealm';
 
 // Lazy so r3f-perf (and its nested drei copy) code-splits out of the normal path.
 const Perf = lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf })));
@@ -28,6 +31,7 @@ export function GameCanvas() {
   });
   // Brief freeze-frame when a swipe connects — cheap, very effective punch
   const hitStop = useCombatStore((s) => s.hitStopActive);
+  const scene = useSceneStore((s) => s.scene);
 
   return (
     <div id="game-canvas">
@@ -40,10 +44,14 @@ export function GameCanvas() {
         camera={{ fov: 55, near: 0.1, far: 300 }}
         gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
       >
-        <color attach="background" args={['#1b1e2b']} />
-        <fog attach="fog" args={['#1b1e2b', 35, 120]} />
+        {scene === 'greybox' && (
+          <>
+            <color attach="background" args={['#1b1e2b']} />
+            <fog attach="fog" args={['#1b1e2b', 35, 120]} />
+            <Lights />
+          </>
+        )}
         <PointerLockOnClick />
-        <Lights />
         {DEBUG && perfHud && (
           <Suspense fallback={null}>
             <Perf position="top-left" />
@@ -62,8 +70,9 @@ export function GameCanvas() {
             <KeyboardControls map={keyboardMap}>
               <Player />
             </KeyboardControls>
+            <SceneManager />
             <Enemies />
-            <Playground />
+            {scene === 'greybox' ? <Playground /> : <TundraRealm />}
           </Physics>
         </Suspense>
         <Effects />

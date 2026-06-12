@@ -188,6 +188,97 @@ body,
   font-style: italic;
 }
 
+.hud-objective {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  font-style: italic;
+  opacity: 0.85;
+  background: rgba(11, 13, 20, 0.45);
+  border: 1px solid rgba(244, 241, 232, 0.1);
+  border-radius: 999px;
+  padding: 5px 16px;
+  white-space: nowrap;
+}
+
+.hud-boss {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(440px, 60vw);
+  text-align: center;
+}
+
+.hud-boss-name {
+  font-size: 13px;
+  letter-spacing: 0.18em;
+  margin-bottom: 5px;
+}
+
+.hud-boss-tag {
+  margin-left: 10px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #88d4ff;
+  border: 1px solid rgba(136, 212, 255, 0.5);
+  border-radius: 999px;
+  padding: 1px 8px;
+  vertical-align: middle;
+}
+
+.hud-boss-track {
+  height: 10px;
+  border: 1px solid rgba(244, 241, 232, 0.35);
+  border-radius: 999px;
+  background: rgba(11, 13, 20, 0.55);
+  overflow: hidden;
+}
+
+.hud-boss-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6fd0ff, #2a64a8);
+  transition: width 0.25s ease-out;
+}
+
+.hud-banner {
+  position: absolute;
+  top: 34%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 44px;
+  letter-spacing: 0.3em;
+  color: #9fd08a;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
+  animation: banner-fade 4.5s ease-in forwards;
+}
+
+@keyframes banner-fade {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.portal-label {
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  color: #cfeaff;
+  background: rgba(11, 13, 20, 0.7);
+  border: 1px solid rgba(127, 212, 255, 0.4);
+  border-radius: 8px;
+  padding: 5px 12px;
+}
+
 /* The Hitcher's aggro line (drei Html) */
 .hitcher-line {
   pointer-events: none;

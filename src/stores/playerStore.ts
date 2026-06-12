@@ -10,6 +10,7 @@ type PlayerState = {
   hitCount: number; // increments every hit taken — keys the damage-flash animation
   lastDamagedAt: number;
   damagePlayer: (amount: number) => void;
+  heal: (amount: number) => void;
   respawnPlayer: () => void;
 };
 
@@ -25,6 +26,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (s.dead || now - s.lastDamagedAt < INVULN_SECONDS) return;
     const hp = Math.max(0, s.hp - amount);
     set({ hp, dead: hp === 0, hitCount: s.hitCount + 1, lastDamagedAt: now });
+  },
+  heal: (amount) => {
+    const s = get();
+    if (s.dead || s.hp >= s.maxHp) return;
+    set({ hp: Math.min(s.maxHp, s.hp + amount) });
   },
   respawnPlayer: () => set({ hp: MAX_HP, dead: false }),
 }));
