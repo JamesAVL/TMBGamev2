@@ -133,10 +133,6 @@ function NabooDialogInner() {
   const clears = useHubStore((s) => s.tundraClears);
   const [lineIdx, setLineIdx] = useState(0);
 
-  useEffect(() => {
-    document.exitPointerLock();
-  }, []);
-
   const lines = nabooLines(clears);
   const line = lines[Math.min(lineIdx, lines.length - 1)]!;
   const last = lineIdx >= lines.length - 1;
@@ -146,17 +142,41 @@ function NabooDialogInner() {
     relockPointer();
   };
 
+  // E or right-click advances; at the last line they close the chat
+  useEffect(() => {
+    document.exitPointerLock();
+    const advance = () => {
+      setLineIdx((i) => {
+        if (i >= lines.length - 1) {
+          useHubStore.getState().setDialogOpen(false);
+          relockPointer();
+          return i;
+        }
+        return i + 1;
+      });
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code === 'KeyE' && !e.repeat) advance();
+    };
+    const onMouse = (e: MouseEvent) => {
+      if (e.button === 2) advance();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onMouse);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onMouse);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="hud-dialog">
       <div className="hud-dialog-box">
         <div className="hud-dialog-name">NABOO</div>
         <p className="hud-dialog-line">{line}</p>
         <div className="hud-dialog-actions">
-          {!last && (
-            <button onClick={() => setLineIdx((i) => i + 1)}>
-              … <kbd>E</kbd>
-            </button>
-          )}
+          {!last && <button onClick={() => setLineIdx((i) => i + 1)}>… (right-click)</button>}
           {last && (
             <>
               <button
@@ -178,7 +198,7 @@ function NabooDialogInner() {
 
 function TatShop() {
   const open = useHubStore((s) => s.shopOpen);
-  const shrapnel = useHubStore((s) => s.shrapnel);
+  const euros = useHubStore((s) => s.euros);
   const trinkets = useHubStore((s) => s.trinkets);
 
   useEffect(() => {
@@ -195,11 +215,11 @@ function TatShop() {
   return (
     <div className="hud-skills">
       <h3>THE TAT</h3>
-      <p>{shrapnel} shrapnel — Naboo watches you browse</p>
+      <p>{euros} euros — Naboo watches you browse</p>
       <div className="hud-skills-list">
         {TRINKETS.map((def) => {
           const owned = Boolean(trinkets[def.id]);
-          const affordable = shrapnel >= def.price;
+          const affordable = euros >= def.price;
           return (
             <div key={def.id} className="hud-skill-row">
               <div className="hud-skill-info">
@@ -256,7 +276,7 @@ export function Hud() {
   const phase = useSceneStore((s) => s.tundra.phase);
   const character = useProfileStore((s) => s.character);
   const nearNaboo = useHubStore((s) => s.nearNaboo);
-  const shrapnel = useHubStore((s) => s.shrapnel);
+  const euros = useHubStore((s) => s.euros);
 
   const [bubble, setBubble] = useState<{ id: number; text: string } | null>(null);
   const bubbleSeq = useRef(0);
@@ -312,8 +332,22 @@ export function Hud() {
         if (line) showBubble(line);
       }
     };
+    // right-click talks — quick, no reaching for the keyboard
+    const onMouseDown = (e: MouseEvent) => {
+      if (e.button !== 2) return;
+      const hub = useHubStore.getState();
+      if (hub.dialogOpen || hub.shopOpen) return; // the dialog handles itself
+      if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
+        hub.setDialogOpen(true);
+        document.exitPointerLock();
+      }
+    };
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onMouseDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onMouseDown);
+    };
   }, [showBubble]);
 
   // The absent legend keeps up a presence: ambient quips on a loose timer…
@@ -403,7 +437,7 @@ export function Hud() {
           {bubble.text}
         </div>
       )}
-      <div className="hud-shrapnel">{shrapnel} shrapnel</div>
+      <div className="hud-shrapnel">{euros} euros</div>
       <div className="hud-hp" aria-label={`health ${hp} of ${maxHp}`}>
         {Array.from({ length: maxHp }, (_, i) => (
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />
@@ -423,9 +457,7 @@ export function Hud() {
         </div>
       )}
       {nearNaboo && scene === 'hub' && (
-        <div className="hud-talk-prompt">
-          <kbd>E</kbd> — talk to Naboo
-        </div>
+        <div className="hud-talk-prompt">right-click — talk to Naboo</div>
       )}
       <NabooDialog />
       <TatShop />

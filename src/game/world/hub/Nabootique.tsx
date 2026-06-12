@@ -110,12 +110,26 @@ export function Nabootique() {
 
   return (
     <>
-      {/* Atmosphere: warm, low, faintly pink — shop lighting with opinions */}
+      {/* Atmosphere: warm, lived-in — and properly lit where it matters */}
       <color attach="background" args={['#171221']} />
-      <hemisphereLight args={['#ffd9b0', '#241a2e', 0.55]} />
-      <pointLight position={[0, 3.4, -2]} color="#ffb070" intensity={3} distance={14} castShadow />
-      <pointLight position={[5, 1.4, 2]} color="#ff5fae" intensity={1.6} distance={8} />
-      <pointLight position={[-5.5, 1.6, -3]} color="#7fd4ff" intensity={1.2} distance={7} />
+      <hemisphereLight args={['#ffd9b0', '#241a2e', 0.8]} />
+      {/* the counter spot: Naboo works under good light */}
+      <spotLight
+        position={[0, 4.2, -3.2]}
+        angle={0.65}
+        penumbra={0.6}
+        intensity={26}
+        color="#ffe2c0"
+        distance={12}
+        castShadow
+      />
+      {/* shelf wash lights so the tat reads */}
+      <pointLight position={[-6.2, 3.2, -2.5]} color="#ffe8d0" intensity={5} distance={6.5} />
+      <pointLight position={[6.2, 3.2, 0.5]} color="#ffe8d0" intensity={5} distance={6.5} />
+      <pointLight position={[0, 3.4, 2]} color="#ffb070" intensity={3.5} distance={12} />
+      {/* colour accents, gentler now */}
+      <pointLight position={[5, 1.4, 4]} color="#ff5fae" intensity={1.2} distance={7} />
+      <pointLight position={[-5.5, 1.2, 4.5]} color="#7fd4ff" intensity={1} distance={6} />
 
       {/* Floor + walls + ceiling shadow box */}
       <Block size={[16, 0.5, 16]} position={[0, -0.25, 0]} color="#7a5b3a" />

@@ -6,11 +6,12 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 ## Status
 
 **Step 5 — THE NABOOTIQUE**: the game now starts in the shop. Naboo holds
-the counter (press **E** to talk — his storyline advances as you clear
-realms) and sells permanent trinkets for **shrapnel** (+1 per kill, +25 per
-Egg): Moon Rock, Tin of Polos, the Velvet Glove, and the Mirror Ball (once
-per realm, survive a killing blow). Doors lead to THE TUNDRA and the
-training range. Shrapnel, trinkets, skills and story progress all persist.
+the counter (right-click to talk — his storyline advances as you clear
+realms) and sells permanent trinkets for **euros** (+1 per kill, +25 per
+Egg): the Lucky Polo, Tin of Polos, the Velvet Glove, and the Mirror Ball
+(once per realm, survive a killing blow). **Right-click** (or E) to talk.
+Doors lead to THE TUNDRA and the training range. Euros, trinkets, skills
+and story progress all persist.
 
 **The Duo update**: Vince and Howard adventure as a pair — press **Q** to
 switch who's on (with a handover line); the other stays just off-screen,

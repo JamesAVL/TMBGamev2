@@ -2,7 +2,7 @@
 // in the show's register — each one a real modifier, not a bigger number for
 // its own sake.
 
-export type TrinketId = 'moonRock' | 'poloTin' | 'velvetGlove' | 'mirrorBall';
+export type TrinketId = 'luckyPolo' | 'poloTin' | 'velvetGlove' | 'mirrorBall';
 
 export type TrinketDef = {
   id: TrinketId;
@@ -14,10 +14,10 @@ export type TrinketDef = {
 
 export const TRINKETS: TrinketDef[] = [
   {
-    id: 'moonRock',
-    name: 'Moon Rock',
-    blurb: 'Still hums. The Moon wants it back.',
-    effect: '+25% jump, always',
+    id: 'luckyPolo',
+    name: 'The Lucky Polo',
+    blurb: 'Found in a jacket that wasn’t Naboo’s.',
+    effect: '+7% crit chance, always',
     price: 40,
   },
   {
@@ -45,7 +45,7 @@ export const TRINKETS: TrinketDef[] = [
 
 export type TrinketMods = {
   damageMult: number;
-  jumpMult: number;
+  critBonus: number;
   maxHpBonus: number;
   hasMirrorBall: boolean;
 };
@@ -53,7 +53,7 @@ export type TrinketMods = {
 export function computeTrinketMods(owned: Partial<Record<TrinketId, boolean>>): TrinketMods {
   return {
     damageMult: owned.velvetGlove ? 1.1 : 1,
-    jumpMult: owned.moonRock ? 1.25 : 1,
+    critBonus: owned.luckyPolo ? 0.07 : 0,
     maxHpBonus: owned.poloTin ? 1 : 0,
     hasMirrorBall: Boolean(owned.mirrorBall),
   };
