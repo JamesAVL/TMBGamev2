@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { sfx } from '../../../audio/sfx';
-import { XP_BY_KIND } from '../../progression/upgrades';
+import { XP_BY_KIND } from '../../progression/skills';
 import { useCombatStore } from '../../../stores/combatStore';
 import { usePlayerStore } from '../../../stores/playerStore';
 import { useRunStore } from '../../../stores/runStore';
@@ -60,7 +60,6 @@ export function Brazier({
           body.applyImpulse({ x: (dx / d) * 2.5, y: 0.8, z: (dz / d) * 2.5 }, true);
           if (result === 'dead') {
             useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
-            if (useRunStore.getState().stats.killHeal) usePlayerStore.getState().heal(1);
           }
         }
         // Break the Black Frost's composure if he's caught in the embers

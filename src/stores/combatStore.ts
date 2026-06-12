@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { runtime } from '../game/combat/runtime';
 
-export type EnemyKind = 'hitcher' | 'parka' | 'blackfrost';
+export type EnemyKind = 'modwolf' | 'hitcher' | 'parka' | 'blackfrost';
 
 export type EnemySpawnDef = {
   id: string;

@@ -1,62 +1,98 @@
 import { useEffect } from 'react';
 import { CLASSIC_CONTROLS } from '../debug/flags';
-import { UPGRADES, type UpgradeId } from '../game/progression/upgrades';
+import { SKILLS } from '../game/progression/skills';
 import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
+import { useProfileStore } from '../stores/profileStore';
 import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { usePointerLock } from './usePointerLock';
+
+function relockPointer() {
+  if (CLASSIC_CONTROLS) return;
+  const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
+  canvas?.requestPointerLock();
+}
 
 function XpBar() {
   const xp = useRunStore((s) => s.xp);
   const xpToNext = useRunStore((s) => s.xpToNext);
   const level = useRunStore((s) => s.level);
+  const unspent = useRunStore((s) => s.unspentPoints);
   return (
     <div className="hud-xp">
       <span className="hud-xp-level">{level + 1}</span>
       <div className="hud-xp-track">
         <div className="hud-xp-fill" style={{ width: `${(xp / xpToNext) * 100}%` }} />
       </div>
+      {unspent > 0 && (
+        <span className="hud-xp-points">
+          +{unspent} — <kbd>T</kbd>
+        </span>
+      )}
     </div>
   );
 }
 
-function PickModal() {
-  const pending = useRunStore((s) => s.pendingChoices);
+function SkillsPanel() {
+  const open = useRunStore((s) => s.panelOpen);
+  const points = useRunStore((s) => s.points);
+  const unspent = useRunStore((s) => s.unspentPoints);
 
-  // Free the mouse for the pick; the chosen card's click (a user gesture)
-  // re-locks it so play resumes seamlessly.
+  // Free the mouse while the panel is up
   useEffect(() => {
-    if (pending) document.exitPointerLock();
-  }, [pending]);
+    if (open) document.exitPointerLock();
+  }, [open]);
 
-  if (!pending) return null;
+  if (!open) return null;
 
-  const pick = (id: UpgradeId) => {
-    useRunStore.getState().choosePick(id);
-    if (!CLASSIC_CONTROLS) {
-      const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
-      canvas?.requestPointerLock();
-    }
+  const close = () => {
+    useRunStore.getState().setPanelOpen(false);
+    relockPointer();
   };
 
   return (
-    <div className="hud-pick">
-      <h3>LEVEL UP</h3>
-      <p>choose one — the run remembers</p>
-      <div className="hud-pick-cards">
-        {pending.map((id) => {
-          const def = UPGRADES.find((u) => u.id === id);
-          if (!def) return null;
+    <div className="hud-skills">
+      <h3>SKILLS</h3>
+      <p>
+        {unspent > 0
+          ? `${unspent} point${unspent > 1 ? 's' : ''} to spend — the run remembers`
+          : 'no points to spend — go and earn some'}
+      </p>
+      <div className="hud-skills-list">
+        {SKILLS.map((def) => {
+          const n = points[def.id] ?? 0;
+          const maxed = n >= def.maxPoints;
+          const canSpend = unspent > 0 && !maxed;
           return (
-            <button key={id} className="hud-pick-card" onClick={() => pick(id)}>
-              <span className="hud-pick-name">{def.name}</span>
-              <span className="hud-pick-blurb">{def.blurb}</span>
-              <span className="hud-pick-effect">{def.effect}</span>
-            </button>
+            <div key={def.id} className="hud-skill-row">
+              <div className="hud-skill-info">
+                <span className="hud-skill-name">{def.name}</span>
+                <span className="hud-skill-blurb">{def.blurb}</span>
+                <span className="hud-skill-value">
+                  {def.valueLabel(n)}
+                  {!maxed && <span className="hud-skill-next"> → {def.valueLabel(n + 1)}</span>}
+                </span>
+              </div>
+              <div className="hud-skill-pips">
+                {Array.from({ length: def.maxPoints }, (_, i) => (
+                  <span key={i} className={i < n ? 'hud-skill-pip filled' : 'hud-skill-pip'} />
+                ))}
+              </div>
+              <button
+                className="hud-skill-spend"
+                disabled={!canSpend}
+                onClick={() => useRunStore.getState().spendPoint(def.id)}
+              >
+                +
+              </button>
+            </div>
           );
         })}
       </div>
+      <button className="hud-skills-close" onClick={close}>
+        done — back to it (T)
+      </button>
     </div>
   );
 }
@@ -86,6 +122,22 @@ export function Hud() {
   const scene = useSceneStore((s) => s.scene);
   const objective = useSceneStore((s) => s.objective);
   const phase = useSceneStore((s) => s.tundra.phase);
+  const character = useProfileStore((s) => s.character);
+
+  // T toggles the skills panel (keydown counts as a user activation, so the
+  // close path can re-capture the pointer).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.code !== 'KeyT' || e.repeat) return;
+      const run = useRunStore.getState();
+      const opening = !run.panelOpen;
+      run.setPanelOpen(opening);
+      if (opening) document.exitPointerLock();
+      else relockPointer();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="hud">
@@ -97,12 +149,13 @@ export function Hud() {
           {scene === 'tundra'
             ? 'The Tundra. Bring a coat. Bring two.'
             : 'The range — a quiet place to hit things.'}
+          {' · '}playing {character === 'vince' ? 'VINCE' : 'HOWARD'}
         </p>
       </div>
       {objective && <div className="hud-objective">{objective}</div>}
       <BossBar />
       <XpBar />
-      <PickModal />
+      <SkillsPanel />
       <div className="hud-hp" aria-label={`health ${hp} of ${maxHp}`}>
         {Array.from({ length: maxHp }, (_, i) => (
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />
@@ -113,11 +166,11 @@ export function Hud() {
       )}
       {dead && (
         <div className="hud-death">
-          <h2>{scene === 'tundra' ? 'FROZEN OUT.' : 'EELED.'}</h2>
+          <h2>{scene === 'tundra' ? 'FROZEN OUT.' : 'SAVAGED.'}</h2>
           <p>
             {scene === 'tundra'
               ? 'An offering to the Frost. Home you go…'
-              : 'The road takes its toll. Back in a tick…'}
+              : 'The pack takes your buttons. Back in a tick…'}
           </p>
         </div>
       )}
@@ -132,20 +185,25 @@ export function Hud() {
               <kbd>A</kbd>
               <kbd>S</kbd>
               <kbd>D</kbd> / arrows — move &nbsp;·&nbsp; <kbd>Shift</kbd> — sprint &nbsp;·&nbsp;{' '}
-              <kbd>Space</kbd> — jump &nbsp;·&nbsp; <kbd>F</kbd> — swipe
+              <kbd>Space</kbd> — jump &nbsp;·&nbsp; <kbd>F</kbd> —{' '}
+              {character === 'vince' ? 'spray' : 'throw'}
             </div>
-            <div>drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom</div>
+            <div>
+              drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>T</kbd> —
+              skills
+            </div>
           </>
         ) : (
           <>
             <div>
-              mouse — steer &nbsp;·&nbsp; click — swipe &nbsp;·&nbsp; <kbd>W</kbd>
+              mouse — steer &nbsp;·&nbsp; click — {character === 'vince' ? 'spray' : 'throw'}{' '}
+              &nbsp;·&nbsp; <kbd>W</kbd>
               <kbd>S</kbd> — forward/back &nbsp;·&nbsp; <kbd>A</kbd>
               <kbd>D</kbd> — strafe
             </div>
             <div>
-              <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp; scroll —
-              zoom &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
+              <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
+              <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
             </div>
           </>
         )}

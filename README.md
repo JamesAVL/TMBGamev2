@@ -5,13 +5,15 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
-**Step 3 — One realm**: a doorway in the greybox range now leads to THE
-TUNDRA — a glacier-walled run with sliding ice, crosswind gusts, and the
-Parka People: diminutive keepers of the Egg of Mantumbi whose hooded faces
-glow with your deepest desire just before they strike. Survive their waves,
-face the Black Frost they summon (hurt him only while brazier embers have
-broken his composure), then claim the Egg for the way home. Die and you're
-an offering. All audio is synthesized Web Audio and all art is original
+**Step 4+ — Skills, two legends, and the pack**: play as **Vince** (hairspray
+cone of weaponised glamour) or **Howard** (thrown jazz records) — swap on the
+dressing pads near spawn. Level-ups bank skill points; press **T** to spend
+them across eight Boosh-flavoured skills (damage, attack speed, max hp, move
+speed, reach, crit, jump, regen) with soft-capped stacking. The greybox range
+is patrolled by **Mod Wolves** (the Hitcher is benched, destined for boss
+billing). THE TUNDRA run: Parka People waves, the Black Frost (break his
+composure with brazier embers — records work too), then claim the Egg of
+Mantumbi. All audio is synthesized Web Audio and all art is original
 primitives — no third-party assets yet. Lore reference: the Mighty Boosh
 fandom wiki; all dialogue is original.
 
