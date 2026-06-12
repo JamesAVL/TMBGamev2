@@ -7,11 +7,12 @@ import { useCombatStore } from '../../stores/combatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useProfileStore } from '../../stores/profileStore';
 import { useRunStore } from '../../stores/runStore';
+import { useHubStore } from '../../stores/hubStore';
 import { useSceneStore } from '../../stores/sceneStore';
 import { popDamage } from '../combat/damagePopups';
 import { throwRecord } from '../combat/projectilePool';
 import { runtime } from '../combat/runtime';
-import { movementConfig } from './movementConfig';
+import { SCENE_SPAWN } from '../sceneConfig';
 
 const SPRAY_COOLDOWN = 0.45; // × stats.cooldownMult
 const SPRAY_RANGE = 2.6; // × Wide Nozzle's rangeMult
@@ -43,6 +44,7 @@ export function PlayerCombat() {
   const lastRegenRef = useRef(0);
   const deadAtRef = useRef(0); // wall-clock seconds
   const wasFrozenRef = useRef(false);
+  const lastMirrorSeen = useRef(-Infinity);
   const iceRef = useRef<THREE.Mesh>(null);
   const [mists, setMists] = useState<Mist[]>([]);
   const mistSeq = useRef(0);
@@ -69,7 +71,7 @@ export function PlayerCombat() {
       const entry = combat.enemies[id];
       if (!entry?.alive) return { connected: false, killed: false, immune: false, crit: false };
       const crit = Math.random() < BASE_CRIT;
-      const dealt = crit ? dmg * 2 : dmg;
+      const dealt = (crit ? dmg * 2 : dmg) * useHubStore.getState().mods.damageMult;
       const result = combat.damageEnemy(id, dealt);
       if (result === 'none') return { connected: false, killed: false, immune: false, crit: false };
       const body = runtime.enemyBodies.get(id);
@@ -85,6 +87,7 @@ export function PlayerCombat() {
       }
       if (result === 'dead') {
         useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
+        useHubStore.getState().earnShrapnel(1);
       }
       return { connected: true, killed: result === 'dead', immune: false, crit };
     };
@@ -191,6 +194,8 @@ export function PlayerCombat() {
       const now = runtime.time;
       const run = useRunStore.getState();
       if (run.panelOpen) return; // mid skill-spend
+      const hubUi = useHubStore.getState();
+      if (hubUi.dialogOpen || hubUi.shopOpen) return; // mid natter
       const character = useProfileStore.getState().character;
       const cooldown =
         character === 'vince'
@@ -245,6 +250,7 @@ export function PlayerCombat() {
     runtime.enemyBodies.get(id)?.applyImpulse({ x: dir.x * 0.8, y: 0.2, z: dir.z * 0.8 }, true);
     if (result === 'dead') {
       useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
+      useHubStore.getState().earnShrapnel(1);
       sfx.enemyDeath();
     }
   };
@@ -328,10 +334,21 @@ export function PlayerCombat() {
     if (iceRef.current) iceRef.current.visible = frozen;
     const teleportHome = () => {
       if (!body) return;
-      const [x, y, z] = movementConfig.position;
+      const [x, y, z] = SCENE_SPAWN[useSceneStore.getState().scene];
       body.setTranslation({ x, y, z }, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     };
+
+    // The Mirror Ball just saved you — make it loud
+    const mirror = player.lastMirrorAt;
+    if (mirror !== lastMirrorSeen.current) {
+      lastMirrorSeen.current = mirror;
+      if (Number.isFinite(mirror) && body) {
+        const pt = body.translation();
+        popDamage(pt.x, pt.y + 1.4, pt.z, 'MIRROR BALL!', 'gold');
+        sfx.treasure();
+      }
+    }
 
     // Safety net: anything that slips below the world goes home
     if (body && body.translation().y < VOID_Y) teleportHome();
@@ -353,8 +370,8 @@ export function PlayerCombat() {
       if (wall - deadAtRef.current > RESPAWN_DELAY) {
         deadAtRef.current = 0;
         const scenes = useSceneStore.getState();
-        if (scenes.scene !== 'greybox') {
-          scenes.setScene('greybox');
+        if (scenes.scene === 'tundra') {
+          scenes.setScene('hub'); // the run ends where runs end: at the shop
         } else {
           teleportHome();
         }
