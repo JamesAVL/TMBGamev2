@@ -1,14 +1,14 @@
-// Skill-point progression, consolidated: 4 shared body skills + 2 fat
-// multi-stat weapon skills per legend. Percentages use the brief's soft-cap
-// form (x / (x + k)) where stacking could run away.
+// Skill-point progression: 4 shared body skills + 2 fat multi-stat weapon
+// skills per legend. Flat, chunky per-point growth — every point should be
+// felt — with hard caps (maxPoints) doing the runaway-prevention.
 import type { EnemyKind } from '../../stores/combatStore';
 import type { CharacterId } from '../../stores/profileStore';
 
 export type SkillId =
   | 'shamansFlask'
   | 'eelGrease'
-  | 'moonBoots'
   | 'poloDiscipline'
+  | 'limelight'
   | 'extraHold'
   | 'wideNozzle'
   | 'rarePressing'
@@ -28,7 +28,6 @@ export type SkillDef = {
   valueLabel: (points: number) => string;
 };
 
-const softCap = (points: number, cap: number, k: number) => (cap * points) / (points + k);
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 export const SKILLS: SkillDef[] = [
@@ -47,15 +46,7 @@ export const SKILLS: SkillDef[] = [
     name: 'Eel Grease',
     blurb: 'Slippery when applied liberally.',
     maxPoints: 5,
-    valueLabel: (n) => `+${pct(softCap(n, 0.45, 2.5))} speed`,
-  },
-  {
-    id: 'moonBoots',
-    owner: 'shared',
-    name: 'Moon Boots',
-    blurb: 'The Moon approves, silently.',
-    maxPoints: 4,
-    valueLabel: (n) => `+${pct(0.15 * n)} jump`,
+    valueLabel: (n) => `+${pct(0.1 * n)} speed`,
   },
   {
     id: 'poloDiscipline',
@@ -63,7 +54,15 @@ export const SKILLS: SkillDef[] = [
     name: 'Polo Discipline',
     blurb: 'Mint-fresh recovery.',
     maxPoints: 4,
-    valueLabel: (n) => (n === 0 ? 'no regen' : `1 hp / ${(16 / n).toFixed(0)}s`),
+    valueLabel: (n) => (n === 0 ? 'no regen' : `1 hp / ${(12 / n).toFixed(0)}s`),
+  },
+  {
+    id: 'limelight',
+    owner: 'shared',
+    name: 'Limelight',
+    blurb: 'The crowd remembers your name.',
+    maxPoints: 5,
+    valueLabel: (n) => `+${pct(0.12 * n)} xp`,
   },
   // ---- Vince: the can ----
   {
@@ -73,7 +72,7 @@ export const SKILLS: SkillDef[] = [
     blurb: 'Stronger formula. The mist remembers.',
     maxPoints: 4,
     valueLabel: (n) =>
-      `${(1 + 0.3 * n).toFixed(2)}× damage` + (n > 0 ? `, mist ${(0.6 * n).toFixed(1)}s` : ''),
+      `${(1 + 0.4 * n).toFixed(1)}× damage` + (n > 0 ? `, mist ${(0.8 * n).toFixed(1)}s` : ''),
   },
   {
     id: 'wideNozzle',
@@ -81,7 +80,7 @@ export const SKILLS: SkillDef[] = [
     name: 'Wide Nozzle',
     blurb: 'Coverage is a lifestyle.',
     maxPoints: 4,
-    valueLabel: (n) => `+${10 * n}° cone, +${pct(0.1 * n)} range, −${pct(0.1 * n)} cooldown`,
+    valueLabel: (n) => `+${12 * n}° cone, +${pct(0.15 * n)} range, −${pct(0.12 * n)} cooldown`,
   },
   // ---- Howard: the collection ----
   {
@@ -91,8 +90,8 @@ export const SKILLS: SkillDef[] = [
     blurb: 'Mint condition. Devastating.',
     maxPoints: 4,
     valueLabel: (n) =>
-      `${(1 + 0.25 * n).toFixed(2)}× damage` +
-      (n > 0 ? `, ${pct(0.12 * n)} gold (2×, pierces)` : ''),
+      `${(1 + 0.3 * n).toFixed(1)}× damage` +
+      (n > 0 ? `, ${pct(0.15 * n)} gold (2×, pierces)` : ''),
   },
   {
     id: 'strongArm',
@@ -101,14 +100,14 @@ export const SKILLS: SkillDef[] = [
     blurb: 'Years of crate digging.',
     maxPoints: 4,
     valueLabel: (n) =>
-      `+${pct(0.15 * n)} speed, +${pct(0.12 * n)} range, −${pct(0.1 * n)} cooldown`,
+      `+${pct(0.2 * n)} speed, +${pct(0.15 * n)} range, −${pct(0.12 * n)} cooldown`,
   },
 ];
 
 export type RunStats = {
   shared: {
     speedMult: number;
-    jumpMult: number;
+    xpMult: number;
     regenInterval: number; // seconds per hp; 0 = off
   };
   vince: {
@@ -136,24 +135,24 @@ export function computeStats(points: SkillPoints): RunStats {
   const n = (id: SkillId) => points[id] ?? 0;
   return {
     shared: {
-      speedMult: 1 + softCap(n('eelGrease'), 0.45, 2.5),
-      jumpMult: 1 + 0.15 * n('moonBoots'),
-      regenInterval: n('poloDiscipline') === 0 ? 0 : 16 / n('poloDiscipline'),
+      speedMult: 1 + 0.1 * n('eelGrease'),
+      xpMult: 1 + 0.12 * n('limelight'),
+      regenInterval: n('poloDiscipline') === 0 ? 0 : 12 / n('poloDiscipline'),
     },
     vince: {
-      damage: 1 + 0.3 * n('extraHold'),
-      cooldownMult: 1 - 0.1 * n('wideNozzle'),
-      rangeMult: 1 + 0.1 * n('wideNozzle'),
-      arcBonusDeg: 10 * n('wideNozzle'),
-      lingerSeconds: 0.6 * n('extraHold'),
+      damage: 1 + 0.4 * n('extraHold'),
+      cooldownMult: 1 - 0.12 * n('wideNozzle'),
+      rangeMult: 1 + 0.15 * n('wideNozzle'),
+      arcBonusDeg: 12 * n('wideNozzle'),
+      lingerSeconds: 0.8 * n('extraHold'),
     },
     howard: {
-      damage: 1 + 0.25 * n('rarePressing'),
-      cooldownMult: 1 - 0.1 * n('strongArm'),
-      rangeMult: 1 + 0.12 * n('strongArm'),
-      speedMult: 1 + 0.15 * n('strongArm'),
-      knockbackBonus: 0.5 * n('strongArm'),
-      rareChance: 0.12 * n('rarePressing'),
+      damage: 1 + 0.3 * n('rarePressing'),
+      cooldownMult: 1 - 0.12 * n('strongArm'),
+      rangeMult: 1 + 0.15 * n('strongArm'),
+      speedMult: 1 + 0.2 * n('strongArm'),
+      knockbackBonus: 0.75 * n('strongArm'),
+      rareChance: 0.15 * n('rarePressing'),
     },
   };
 }

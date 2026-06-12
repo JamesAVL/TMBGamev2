@@ -1,7 +1,8 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 // The legends travel together. `character` is whoever you're controlling;
-// Q swaps. The other follows (and never fights — that's your job).
+// Q swaps. The other is just off-screen, doing their fringe.
 export type CharacterId = 'vince' | 'howard';
 
 type ProfileState = {
@@ -10,8 +11,14 @@ type ProfileState = {
   switchCharacter: () => void;
 };
 
-export const useProfileStore = create<ProfileState>()((set) => ({
-  character: 'vince',
-  setCharacter: (character) => set({ character }),
-  switchCharacter: () => set((s) => ({ character: s.character === 'vince' ? 'howard' : 'vince' })),
-}));
+export const useProfileStore = create<ProfileState>()(
+  persist(
+    (set) => ({
+      character: 'vince',
+      setCharacter: (character) => set({ character }),
+      switchCharacter: () =>
+        set((s) => ({ character: s.character === 'vince' ? 'howard' : 'vince' })),
+    }),
+    { name: 'tmb-profile', partialize: (s) => ({ character: s.character }) },
+  ),
+);

@@ -149,7 +149,9 @@ function TundraDirector() {
       if (aliveCount(combat.enemies, waveIds.current) > 0) return;
       if (wave >= TUNDRA_WAVES.length) {
         scenes.setTundra({ phase: 'boss' });
-        scenes.setObjective('They have summoned the Black Frost. Embers break his composure.');
+        scenes.setObjective(
+          'The Black Frost takes the stage. Swipe a brazier — embers break his composure.',
+        );
         combat.spawnEnemies([BLACK_FROST]);
         sfx.freezeSnap();
         return;

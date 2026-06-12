@@ -8,6 +8,7 @@ import { useCombatStore } from '../stores/combatStore';
 import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { keyboardMap } from './controls';
+import { DamageNumbers } from './combat/DamageNumbers';
 import { Projectiles } from './combat/Projectiles';
 import { Effects } from './Effects';
 import { Enemies } from './enemies/Enemies';
@@ -81,6 +82,7 @@ export function GameCanvas() {
             </KeyboardControls>
             <SceneManager />
             <Projectiles />
+            <DamageNumbers />
             <Enemies />
             {scene === 'greybox' ? <Playground /> : <TundraRealm />}
           </Physics>

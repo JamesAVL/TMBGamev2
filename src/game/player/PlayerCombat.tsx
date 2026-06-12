@@ -8,12 +8,14 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { useProfileStore } from '../../stores/profileStore';
 import { useRunStore } from '../../stores/runStore';
 import { useSceneStore } from '../../stores/sceneStore';
+import { popDamage } from '../combat/damagePopups';
 import { throwRecord } from '../combat/projectilePool';
 import { runtime } from '../combat/runtime';
 import { movementConfig } from './movementConfig';
 
 const SPRAY_COOLDOWN = 0.45; // × stats.cooldownMult
-const SPRAY_RANGE = 2.4; // × stats.rangeMult, × (1 + Wide Nozzle)
+const SPRAY_RANGE = 2.6; // × Wide Nozzle's rangeMult
+const POINT_BLANK = 1.1; // inside this, the cone angle is forgiven
 const SPRAY_BASE_HALF_ANGLE = 55; // degrees, + Wide Nozzle
 const SPRAY_LIFETIME = 0.16;
 const RECORD_COOLDOWN = 0.6; // × stats.cooldownMult
@@ -36,6 +38,8 @@ export function PlayerCombat() {
   const sprayRef = useRef<THREE.Mesh>(null);
   const sprayMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const lastAttackRef = useRef(-Infinity);
+  const queuedAttackRef = useRef(false);
+  const attackFnRef = useRef<(() => void) | null>(null);
   const lastRegenRef = useRef(0);
   const deadAtRef = useRef(0); // wall-clock seconds
   const wasFrozenRef = useRef(false);
@@ -44,21 +48,41 @@ export function PlayerCombat() {
   const mistSeq = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
+  // Cone with its APEX at the origin, extending −Y (rotated to +Z below):
+  // scaling z stretches it forward only, anchored at the can.
+  const sprayGeometry = useMemo(() => {
+    const g = new THREE.ConeGeometry(0.65, SPRAY_RANGE, 12, 1, true);
+    g.translate(0, -SPRAY_RANGE / 2, 0);
+    return g;
+  }, []);
 
   useEffect(() => {
     // Damage one enemy, with crit roll; grants XP / kill heal on death.
-    const strike = (id: string, dmg: number, knockback: number, dir: { x: number; z: number }) => {
+    const strike = (
+      id: string,
+      dmg: number,
+      knockback: number,
+      dir: { x: number; z: number },
+      gold = false,
+    ) => {
       const combat = useCombatStore.getState();
       const entry = combat.enemies[id];
       if (!entry?.alive) return { connected: false, killed: false, immune: false, crit: false };
       const crit = Math.random() < BASE_CRIT;
-      const result = combat.damageEnemy(id, crit ? dmg * 2 : dmg);
+      const dealt = crit ? dmg * 2 : dmg;
+      const result = combat.damageEnemy(id, dealt);
       if (result === 'none') return { connected: false, killed: false, immune: false, crit: false };
-      if (result === 'immune')
+      const body = runtime.enemyBodies.get(id);
+      const at = body?.translation();
+      if (result === 'immune') {
+        if (at) popDamage(at.x, at.y + 1.1, at.z, 'unbothered', 'info');
         return { connected: false, killed: false, immune: true, crit: false };
-      runtime.enemyBodies
-        .get(id)
-        ?.applyImpulse({ x: dir.x * knockback, y: 0.9, z: dir.z * knockback }, true);
+      }
+      body?.applyImpulse({ x: dir.x * knockback, y: 0.9, z: dir.z * knockback }, true);
+      if (at) {
+        const shown = Number(dealt.toFixed(1));
+        popDamage(at.x, at.y + 1.1, at.z, String(shown), crit || gold ? 'gold' : 'hit');
+      }
       if (result === 'dead') {
         useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
       }
@@ -79,9 +103,11 @@ export function PlayerCombat() {
       for (const [id, body] of runtime.enemyBodies) {
         const t = body.translation();
         toEnemy.set(t.x - p.x, 0, t.z - p.z);
-        if (toEnemy.length() > range) continue;
+        const dist = toEnemy.length();
+        if (dist > range) continue;
         toEnemy.normalize();
-        if (toEnemy.dot(forward) < halfAngleCos) continue;
+        // point-blank always connects — the angle test is unfair at touching range
+        if (dist > POINT_BLANK && toEnemy.dot(forward) < halfAngleCos) continue;
         const r = strike(id, can.damage, 3, toEnemy);
         connected ||= r.connected;
         killed ||= r.killed;
@@ -137,7 +163,7 @@ export function PlayerCombat() {
         range: RECORD_RANGE * collection.rangeMult,
         rare,
         onEnemyHit: (id, dir) => {
-          const r = strike(id, dmg, knockback, dir);
+          const r = strike(id, dmg, knockback, dir, rare);
           if (r.connected) {
             if (r.crit) sfx.crit();
             else sfx.thunk();
@@ -167,9 +193,14 @@ export function PlayerCombat() {
         character === 'vince'
           ? SPRAY_COOLDOWN * run.stats.vince.cooldownMult
           : RECORD_COOLDOWN * run.stats.howard.cooldownMult;
-      if (now - lastAttackRef.current < cooldown) return;
+      const remaining = cooldown - (now - lastAttackRef.current);
+      if (remaining > 0) {
+        if (remaining < 0.3) queuedAttackRef.current = true; // buffered
+        return;
+      }
       const player = usePlayerStore.getState();
       if (player.dead || now < player.frozenUntil) return; // no flailing in the ice
+      queuedAttackRef.current = false;
       const body = runtime.player?.group;
       if (!body) return;
       lastAttackRef.current = now;
@@ -183,6 +214,8 @@ export function PlayerCombat() {
       if (character === 'vince') sprayAttack(p);
       else recordAttack(p);
     };
+
+    attackFnRef.current = attack;
 
     const onMouseDown = (e: MouseEvent) => {
       // While pointer-locked, left click attacks (the unlocked click only locks).
@@ -217,6 +250,12 @@ export function PlayerCombat() {
     const now = runtime.time;
     const stats = useRunStore.getState().stats;
     const character = useProfileStore.getState().character;
+
+    // buffered input: a click that landed just before the cooldown ended
+    if (queuedAttackRef.current) {
+      queuedAttackRef.current = false;
+      attackFnRef.current?.();
+    }
 
     // Hairspray visual: a glitter cone that blooms and fades (Vince only)
     if (sprayRef.current && sprayMatRef.current) {
@@ -276,6 +315,8 @@ export function PlayerCombat() {
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
       body.lockTranslations(true, true);
       sfx.freezeSnap();
+      const pt = body.translation();
+      popDamage(pt.x, pt.y + 1.3, pt.z, 'FROZEN', 'info');
     } else if (body && !frozen && wasFrozenRef.current) {
       wasFrozenRef.current = false;
       body.lockTranslations(false, true);
@@ -324,10 +365,10 @@ export function PlayerCombat() {
       <mesh
         ref={sprayRef}
         visible={false}
-        position={[0, 0.25, 1.3]}
+        position={[0, 0.3, 0.25]}
         rotation={[-Math.PI / 2, 0, 0]}
+        geometry={sprayGeometry}
       >
-        <coneGeometry args={[0.65, 2.2, 12, 1, true]} />
         <meshStandardMaterial
           ref={sprayMatRef}
           color="#cfe0ff"

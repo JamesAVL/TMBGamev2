@@ -75,6 +75,6 @@ export const BOSS_LOCK_LINE = 'STAGE MANAGER: No swaps mid-set.';
 // The absent legend explains the composure mechanic when hits keep clinking
 // off (keyed by who's ABSENT).
 export const COMPOSURE_HINTS: Record<CharacterId, string> = {
-  howard: 'HOWARD: His composure is holding! The braziers — embers break it. Lure him close.',
-  vince: 'VINCE: He’s not even bothered! Smack a brazier when he’s near it — embers mess him up.',
+  howard: 'HOWARD: His composure is holding! Smack any brazier — embers break him. Then unload.',
+  vince: 'VINCE: He’s not even bothered! Hit a brazier — the embers wreck his cool. Then lay in.',
 };
