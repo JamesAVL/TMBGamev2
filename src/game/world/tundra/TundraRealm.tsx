@@ -6,6 +6,8 @@ import { sfx } from '../../../audio/sfx';
 import { aliveCount, useCombatStore } from '../../../stores/combatStore';
 import { usePlayerStore } from '../../../stores/playerStore';
 import { useHubStore } from '../../../stores/hubStore';
+import { useRunStore } from '../../../stores/runStore';
+import { useRunTracker } from '../../../stores/runTrackerStore';
 import { useSceneStore } from '../../../stores/sceneStore';
 import { runtime } from '../../combat/runtime';
 import { BlackFrost } from '../../enemies/BlackFrost';
@@ -283,7 +285,10 @@ export function TundraRealm() {
           position={[0, 1.7, -51]}
           label="HOME"
           color="#9fd08a"
-          onEnter={() => setScene('hub')}
+          onEnter={() => {
+            useRunTracker.getState().finalize('cleared', useRunStore.getState().level);
+            setScene('hub');
+          }}
         />
       )}
 

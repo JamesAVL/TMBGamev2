@@ -1,5 +1,7 @@
 // Synthesized combat SFX via Web Audio — placeholder juice with zero asset
 // licensing. Real foley can replace these calls one-for-one later.
+import { useSettingsStore } from '../stores/settingsStore';
+
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 
@@ -7,11 +9,16 @@ function audio(): { ctx: AudioContext; master: GainNode } {
   if (!ctx) {
     ctx = new AudioContext();
     master = ctx.createGain();
-    master.gain.value = 0.5;
+    master.gain.value = useSettingsStore.getState().volume;
     master.connect(ctx.destination);
   }
   if (ctx.state === 'suspended') void ctx.resume();
   return { ctx, master: master! };
+}
+
+// Live master volume (the settings slider calls this alongside the store).
+export function setMasterVolume(v: number) {
+  if (master) master.gain.value = Math.min(1, Math.max(0, v));
 }
 
 // Call from any user-gesture handler to satisfy autoplay policies.

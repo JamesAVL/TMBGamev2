@@ -8,6 +8,7 @@ import {
   type TrinketMods,
 } from '../game/progression/trinkets';
 import { usePlayerStore } from './playerStore';
+import { useRunTracker } from './runTrackerStore';
 
 // The Nabootique's books: euros (the across-runs currency), trinkets
 // owned, and how far Naboo's storyline has come. Persisted.
@@ -39,7 +40,10 @@ export const useHubStore = create<HubState>()(
       nearNaboo: false,
       dialogOpen: false,
       shopOpen: false,
-      earnEuros: (amount) => set((s) => ({ euros: s.euros + amount })),
+      earnEuros: (amount) => {
+        useRunTracker.getState().addEuros(amount);
+        set((s) => ({ euros: s.euros + amount }));
+      },
       buyTrinket: (id) => {
         const s = get();
         const def = TRINKETS.find((t) => t.id === id);

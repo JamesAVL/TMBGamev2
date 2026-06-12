@@ -17,4 +17,7 @@ export const runtime = {
   // the sim is paused (hit-stop, level-up pick). ALL combat/AI timers compare
   // against this, never wall-clock — so windups can't lapse during a pause.
   time: 0,
+  // Set when the control scheme flips mid-scene: the remounted player body
+  // restores this position instead of the scene spawn.
+  pendingReposition: null as { x: number; y: number; z: number } | null,
 };

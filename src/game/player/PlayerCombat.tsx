@@ -8,7 +8,9 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { useProfileStore } from '../../stores/profileStore';
 import { useRunStore } from '../../stores/runStore';
 import { useHubStore } from '../../stores/hubStore';
+import { useRunTracker } from '../../stores/runTrackerStore';
 import { useSceneStore } from '../../stores/sceneStore';
+import { useUiStore } from '../../stores/uiStore';
 import { popDamage } from '../combat/damagePopups';
 import { throwRecord } from '../combat/projectilePool';
 import { runtime } from '../combat/runtime';
@@ -195,6 +197,8 @@ export function PlayerCombat() {
       const now = runtime.time;
       const run = useRunStore.getState();
       if (run.panelOpen) return; // mid skill-spend
+      const ui = useUiStore.getState();
+      if (ui.phase !== 'playing' || ui.pauseOpen) return; // menus first
       const hubUi = useHubStore.getState();
       if (hubUi.dialogOpen || hubUi.shopOpen) return; // mid natter
       const character = useProfileStore.getState().character;
@@ -372,6 +376,7 @@ export function PlayerCombat() {
         deadAtRef.current = 0;
         const scenes = useSceneStore.getState();
         if (scenes.scene === 'tundra') {
+          useRunTracker.getState().finalize('died', useRunStore.getState().level);
           scenes.setScene('hub'); // the run ends where runs end: at the shop
         } else {
           teleportHome();

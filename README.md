@@ -47,16 +47,22 @@ fandom wiki; all dialogue is original.
 
 ## Debug / tuning
 
-Append `?debug` to the URL to get the leva tuning panels (ecctrl movement
-parameters, physics wireframe toggle) and the r3f-perf HUD.
+Toggle "debug tools" in the pause menu (P) for the leva tuning panels,
+physics wireframes, and the r3f-perf HUD. (`?debug` still works as a
+first-load initialiser.)
 
 ## Controls
 
 Click the game to capture the mouse, then:
 
-mouse — steer · click — swipe (F also works) · W/S — forward/back ·
+mouse — steer · click — spray/throw (F also works) · W/S — forward/back ·
 A/D — strafe · Shift — sprint · Space — jump · scroll — zoom ·
+Q — switch legend · T — skills · P — menu · right-click — talk ·
 Esc — release mouse
+
+The pause menu (P or the gear button) holds volume, the movement-scheme
+switch (mouse-steered vs keyboard + drag camera), performance mode, debug
+tools, and new game. A title screen fronts the whole thing.
 
 Append `?classic` to the URL for the original scheme (drag-to-orbit camera,
 character turns toward travel direction) to A/B the two feels.
