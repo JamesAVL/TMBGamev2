@@ -1,38 +1,40 @@
 import type { EnemySpawnDef } from '../../stores/combatStore';
 
-// Greybox range: four Hitchers at their posts, respawning so the playground
-// never empties. Original lines in his voice (no reproduced show dialogue).
+// Greybox range: a pack of Mod Wolves on patrol, respawning so the playground
+// never empties. Original lines in the show's spirit. (The Hitcher is benched
+// — he's destined for top billing as a boss.)
 export const GREYBOX_SPAWNS: EnemySpawnDef[] = [
   {
-    id: 'hitcher-1',
-    kind: 'hitcher',
+    id: 'modwolf-1',
+    kind: 'modwolf',
     position: [6.5, 1, -9],
-    hp: 3,
+    hp: 2,
     respawnDelay: 10,
-    line: 'Oi oi. This here is a toll road, sunshine.',
+    line: 'Nice threads. Hand them over.',
   },
   {
-    id: 'hitcher-2',
-    kind: 'hitcher',
+    id: 'modwolf-2',
+    kind: 'modwolf',
     position: [-12, 1, 7],
-    hp: 3,
+    hp: 2,
     respawnDelay: 10,
-    line: 'Lovely night for it. Shame about you.',
+    line: 'The pack rides tonight.',
   },
   {
-    id: 'hitcher-3',
-    kind: 'hitcher',
+    id: 'modwolf-3',
+    kind: 'modwolf',
     position: [-16, 1, -19.5],
-    hp: 3,
+    hp: 2,
     respawnDelay: 10,
-    line: 'I have got an eel with your name on it, boy.',
+    line: 'You call that a haircut?',
   },
   {
-    id: 'hitcher-4',
-    kind: 'hitcher',
+    id: 'modwolf-4',
+    kind: 'modwolf',
     position: [15, 1, 7],
-    hp: 3,
+    hp: 2,
     respawnDelay: 10,
-    line: 'Nobody walks my tarmac for free.',
+    line: 'Lovely scooter weather for a maiming.',
   },
+  { id: 'modwolf-5', kind: 'modwolf', position: [12, 1, -19], hp: 2, respawnDelay: 10 },
 ];

@@ -8,6 +8,7 @@ import { useCombatStore } from '../stores/combatStore';
 import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { keyboardMap } from './controls';
+import { Projectiles } from './combat/Projectiles';
 import { Effects } from './Effects';
 import { Enemies } from './enemies/Enemies';
 import { GameClock } from './GameClock';
@@ -31,10 +32,10 @@ export function GameCanvas() {
     // which follows the raw body position); fixed 1/60 is the alternative.
     fixedTimestep: false,
   });
-  // Brief freeze-frame when a swipe connects — cheap, very effective punch.
-  // Level-up picks pause the whole sim until a card is chosen.
+  // Brief freeze-frame when an attack connects — cheap, very effective punch.
+  // The skills panel pauses the whole sim while open.
   const hitStop = useCombatStore((s) => s.hitStopActive);
-  const pendingPick = useRunStore((s) => s.pendingChoices !== null);
+  const skillsOpen = useRunStore((s) => s.panelOpen);
   const scene = useSceneStore((s) => s.scene);
 
   return (
@@ -68,7 +69,7 @@ export function GameCanvas() {
         <Suspense fallback={null}>
           <Physics
             timeStep={fixedTimestep ? 1 / 60 : 'vary'}
-            paused={hitStop || pendingPick}
+            paused={hitStop || skillsOpen}
             debug={DEBUG && physicsWireframe}
           >
             <GameClock />
@@ -76,6 +77,7 @@ export function GameCanvas() {
               <Player />
             </KeyboardControls>
             <SceneManager />
+            <Projectiles />
             <Enemies />
             {scene === 'greybox' ? <Playground /> : <TundraRealm />}
           </Physics>

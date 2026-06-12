@@ -149,4 +149,23 @@ export const sfx = {
     tone(c, m, 'sawtooth', 90, 440, 0.22, 0.35);
     noise(c, m, 0.25, 0.3, 1200, 3500);
   },
+  spray() {
+    // aerosol hiss
+    const { ctx: c, master: m } = audio();
+    noise(c, m, 0.16, 0.3, 2600, 4200);
+  },
+  throwWhoosh() {
+    const { ctx: c, master: m } = audio();
+    noise(c, m, 0.14, 0.25, 350, 950);
+  },
+  thunk() {
+    // vinyl meets skull
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'square', 130, 60, 0.08, 0.5);
+    noise(c, m, 0.03, 0.3, 1800, 700);
+  },
+  spend() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sine', 700, 980, 0.09, 0.25);
+  },
 };

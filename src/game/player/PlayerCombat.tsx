@@ -2,42 +2,40 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ensureAudio, sfx } from '../../audio/sfx';
-import { XP_BY_KIND } from '../progression/upgrades';
+import { XP_BY_KIND } from '../progression/skills';
 import { useCombatStore } from '../../stores/combatStore';
 import { usePlayerStore } from '../../stores/playerStore';
+import { useProfileStore } from '../../stores/profileStore';
 import { useRunStore } from '../../stores/runStore';
 import { useSceneStore } from '../../stores/sceneStore';
+import { throwRecord } from '../combat/projectilePool';
 import { runtime } from '../combat/runtime';
 import { movementConfig } from './movementConfig';
 
-const ATTACK_COOLDOWN = 0.45; // × stats.cooldownMult
-const ATTACK_RANGE = 2.4; // × stats.rangeMult
+const SPRAY_COOLDOWN = 0.45; // × stats.cooldownMult
+const SPRAY_RANGE = 2.4; // × stats.rangeMult
+const SPRAY_HALF_ANGLE_COS = Math.cos((55 * Math.PI) / 180);
+const SPRAY_LIFETIME = 0.16;
+const RECORD_COOLDOWN = 0.6; // × stats.cooldownMult
+const RECORD_RANGE = 12; // × stats.rangeMult
 const VOID_Y = -10; // below the slab: teleport home instead of falling forever
-const ATTACK_HALF_ANGLE_COS = Math.cos((55 * Math.PI) / 180);
-const SWIPE_LIFETIME = 0.18;
 const RESPAWN_DELAY = 1.4;
-const ARC = Math.PI * 0.7;
-const NOVA_RANGE = 3.5;
-const NOVA_LIFETIME = 0.3;
 
-// Mounted inside <Ecctrl>, so the swipe arc inherits the body transform
+// Mounted inside <Ecctrl>, so the spray cone inherits the body transform
 // (which faces the camera heading under CameraBasedMovement).
 export function PlayerCombat() {
   const camera = useThree((state) => state.camera);
-  const arcRef = useRef<THREE.Mesh>(null);
-  const arcMatRef = useRef<THREE.MeshStandardMaterial>(null);
-  const novaRef = useRef<THREE.Mesh>(null);
-  const novaMatRef = useRef<THREE.MeshStandardMaterial>(null);
-  const novaAtRef = useRef(-Infinity);
+  const sprayRef = useRef<THREE.Mesh>(null);
+  const sprayMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const lastAttackRef = useRef(-Infinity);
-  const swipeCountRef = useRef(0);
+  const lastRegenRef = useRef(0);
   const deadAtRef = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
 
   useEffect(() => {
-    // Damage one enemy, with crit roll; returns flags + grants XP / kill heal.
-    const strike = (id: string, dmg: number, knockback: number, dir: THREE.Vector3) => {
+    // Damage one enemy, with crit roll; grants XP / kill heal on death.
+    const strike = (id: string, dmg: number, knockback: number, dir: { x: number; z: number }) => {
       const combat = useCombatStore.getState();
       const entry = combat.enemies[id];
       if (!entry?.alive) return { connected: false, killed: false, immune: false, crit: false };
@@ -52,68 +50,38 @@ export function PlayerCombat() {
         ?.applyImpulse({ x: dir.x * knockback, y: 0.9, z: dir.z * knockback }, true);
       if (result === 'dead') {
         useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
-        if (stats.killHeal) usePlayerStore.getState().heal(1);
       }
       return { connected: true, killed: result === 'dead', immune: false, crit };
     };
 
-    const nova = (p: { x: number; y: number; z: number }) => {
-      novaAtRef.current = runtime.time;
-      sfx.nova();
-      let killed = false;
-      for (const [id, enemyBody] of runtime.enemyBodies) {
-        const t = enemyBody.translation();
-        toEnemy.set(t.x - p.x, 0, t.z - p.z);
-        if (toEnemy.length() > NOVA_RANGE) continue;
-        toEnemy.normalize();
-        const r = strike(id, 1, 2.5, toEnemy);
-        killed ||= r.killed;
-      }
-      if (killed) sfx.enemyDeath();
-    };
-
-    const attack = () => {
-      const now = runtime.time;
-      const stats = useRunStore.getState().stats;
-      if (useRunStore.getState().pendingChoices) return; // mid level-up pick
-      if (now - lastAttackRef.current < ATTACK_COOLDOWN * stats.cooldownMult) return;
-      if (usePlayerStore.getState().dead) return;
-      const body = runtime.player?.group;
-      if (!body) return;
-      lastAttackRef.current = now;
-      ensureAudio();
-      sfx.swing();
+    // Vince: a tight cone of weaponised glamour
+    const sprayAttack = (p: { x: number; y: number; z: number }, range: number, dmg: number) => {
+      sfx.spray();
       useCombatStore.getState().registerAttack();
-
-      camera.getWorldDirection(forward);
-      forward.y = 0;
-      forward.normalize();
-      const p = body.translation();
-      const range = ATTACK_RANGE * stats.rangeMult;
-
       let connected = false;
       let killed = false;
       let immune = false;
       let anyCrit = false;
-      for (const [id, enemyBody] of runtime.enemyBodies) {
-        const t = enemyBody.translation();
+      for (const [id] of runtime.enemyBodies) {
+        const body = runtime.enemyBodies.get(id);
+        if (!body) continue;
+        const t = body.translation();
         toEnemy.set(t.x - p.x, 0, t.z - p.z);
         if (toEnemy.length() > range) continue;
         toEnemy.normalize();
-        if (toEnemy.dot(forward) < ATTACK_HALF_ANGLE_COS) continue;
-        const r = strike(id, stats.damage, 3, toEnemy);
+        if (toEnemy.dot(forward) < SPRAY_HALF_ANGLE_COS) continue;
+        const r = strike(id, dmg, 3, toEnemy);
         connected ||= r.connected;
         killed ||= r.killed;
         immune ||= r.immune;
         anyCrit ||= r.crit;
       }
-      // Hittable props (braziers etc.) share the same cone check
       for (const target of runtime.swipeTargets.values()) {
         const t = target.position();
         toEnemy.set(t.x - p.x, 0, t.z - p.z);
         if (toEnemy.length() > range) continue;
         toEnemy.normalize();
-        if (toEnemy.dot(forward) < ATTACK_HALF_ANGLE_COS) continue;
+        if (toEnemy.dot(forward) < SPRAY_HALF_ANGLE_COS) continue;
         target.onHit();
         connected = true;
       }
@@ -125,16 +93,69 @@ export function PlayerCombat() {
         sfx.clink(); // bounced off — he's unbothered
       }
       if (killed) sfx.enemyDeath();
+    };
 
-      // Jazz Static: every Nth swipe erupts
-      swipeCountRef.current++;
-      if (stats.novaEvery > 0 && swipeCountRef.current % stats.novaEvery === 0) {
-        nova(p);
+    // Howard: a 12-inch of pure jazz, thrown flat and spinning
+    const recordAttack = (p: { x: number; y: number; z: number }, range: number, dmg: number) => {
+      sfx.throwWhoosh();
+      throwRecord({
+        x: p.x + forward.x * 0.5,
+        y: p.y + 0.35,
+        z: p.z + forward.z * 0.5,
+        dx: forward.x,
+        dz: forward.z,
+        range,
+        onEnemyHit: (id, dir) => {
+          const r = strike(id, dmg, 3, dir);
+          if (r.connected) {
+            if (r.crit) sfx.crit();
+            else sfx.thunk();
+            useCombatStore.getState().triggerHitStop(r.crit ? 110 : 60);
+            if (r.killed) sfx.enemyDeath();
+            return true;
+          }
+          if (r.immune) {
+            sfx.clink();
+            return true; // disc bounces off the composure
+          }
+          return false; // dead/missing enemy — sail on
+        },
+        onTargetHit: (id) => {
+          runtime.swipeTargets.get(id)?.onHit();
+          sfx.thunk();
+        },
+      });
+    };
+
+    const attack = () => {
+      const now = runtime.time;
+      const run = useRunStore.getState();
+      if (run.panelOpen) return; // mid skill-spend
+      const stats = run.stats;
+      const character = useProfileStore.getState().character;
+      const cooldown =
+        (character === 'vince' ? SPRAY_COOLDOWN : RECORD_COOLDOWN) * stats.cooldownMult;
+      if (now - lastAttackRef.current < cooldown) return;
+      if (usePlayerStore.getState().dead) return;
+      const body = runtime.player?.group;
+      if (!body) return;
+      lastAttackRef.current = now;
+      ensureAudio();
+
+      camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
+      const p = body.translation();
+
+      if (character === 'vince') {
+        sprayAttack(p, SPRAY_RANGE * stats.rangeMult, stats.damage);
+      } else {
+        recordAttack(p, RECORD_RANGE * stats.rangeMult, stats.damage);
       }
     };
 
     const onMouseDown = (e: MouseEvent) => {
-      // While pointer-locked, left click swipes (the unlocked click only locks).
+      // While pointer-locked, left click attacks (the unlocked click only locks).
       if (e.button === 0 && document.pointerLockElement) attack();
     };
     const onKeyDown = (e: KeyboardEvent) => {
@@ -151,29 +172,29 @@ export function PlayerCombat() {
   useFrame(() => {
     const now = runtime.time;
     const stats = useRunStore.getState().stats;
+    const character = useProfileStore.getState().character;
 
-    // Swipe arc visual: quick expand-and-fade in front of the body
-    if (arcRef.current && arcMatRef.current) {
+    // Hairspray visual: a glitter cone that blooms and fades (Vince only)
+    if (sprayRef.current && sprayMatRef.current) {
       const t = now - useCombatStore.getState().lastAttackAt;
-      const active = t >= 0 && t < SWIPE_LIFETIME;
-      arcRef.current.visible = active;
+      const active = character === 'vince' && t >= 0 && t < SPRAY_LIFETIME;
+      sprayRef.current.visible = active;
       if (active) {
-        const k = t / SWIPE_LIFETIME;
-        arcRef.current.scale.setScalar((0.75 + k * 0.6) * stats.rangeMult);
-        arcMatRef.current.opacity = 1 - k;
+        const k = t / SPRAY_LIFETIME;
+        sprayRef.current.scale.set(0.6 + k * 0.7, 0.6 + k * 0.7, stats.rangeMult);
+        sprayMatRef.current.opacity = 0.7 * (1 - k);
       }
     }
 
-    // Jazz Static nova: expanding flat ring around the body
-    if (novaRef.current && novaMatRef.current) {
-      const t = now - novaAtRef.current;
-      const active = t >= 0 && t < NOVA_LIFETIME;
-      novaRef.current.visible = active;
-      if (active) {
-        const k = t / NOVA_LIFETIME;
-        novaRef.current.scale.setScalar(0.5 + k * NOVA_RANGE);
-        novaMatRef.current.opacity = 0.85 * (1 - k);
+    // Polo Discipline: mint-fresh recovery
+    const player = usePlayerStore.getState();
+    if (stats.regenInterval > 0 && !player.dead) {
+      if (now - lastRegenRef.current >= stats.regenInterval) {
+        lastRegenRef.current = now;
+        player.heal(1);
       }
+    } else {
+      lastRegenRef.current = now;
     }
 
     const body = runtime.player?.group;
@@ -189,7 +210,6 @@ export function PlayerCombat() {
 
     // Death → brief pause → respawn. Dying inside a realm ends the run and
     // sends you home to the greybox (the SceneManager handles the teleport).
-    const player = usePlayerStore.getState();
     if (player.dead) {
       if (deadAtRef.current === 0) deadAtRef.current = now;
       if (now - deadAtRef.current > RESPAWN_DELAY) {
@@ -205,35 +225,19 @@ export function PlayerCombat() {
     }
   });
 
+  // Spray cone: apex at the can, base flaring forward (+Z)
   return (
-    <>
-      <mesh
-        ref={arcRef}
-        visible={false}
-        position={[0, 0.15, 0.3]}
-        rotation={[Math.PI / 2, 0, Math.PI / 2 - ARC / 2]}
-      >
-        <torusGeometry args={[0.85, 0.06, 8, 24, ARC]} />
-        <meshStandardMaterial
-          ref={arcMatRef}
-          color="#ffffff"
-          emissive="#ffffff"
-          emissiveIntensity={2.5}
-          transparent
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh ref={novaRef} visible={false} position={[0, -0.6, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1, 0.07, 8, 36]} />
-        <meshStandardMaterial
-          ref={novaMatRef}
-          color="#b9f"
-          emissive="#cc88ff"
-          emissiveIntensity={3}
-          transparent
-          depthWrite={false}
-        />
-      </mesh>
-    </>
+    <mesh ref={sprayRef} visible={false} position={[0, 0.25, 1.3]} rotation={[-Math.PI / 2, 0, 0]}>
+      <coneGeometry args={[0.65, 2.2, 12, 1, true]} />
+      <meshStandardMaterial
+        ref={sprayMatRef}
+        color="#cfe0ff"
+        emissive="#e8d4ff"
+        emissiveIntensity={2}
+        transparent
+        depthWrite={false}
+        side={THREE.DoubleSide}
+      />
+    </mesh>
   );
 }
