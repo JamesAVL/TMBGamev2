@@ -19,20 +19,26 @@ const Perf = lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf })));
 export function GameCanvas() {
   // Called unconditionally (hook rules); with the leva root hidden the
   // values simply stay at their defaults.
-  const { physicsWireframe, perfHud } = useControls('Debug', {
+  const { physicsWireframe, perfHud, fixedTimestep } = useControls('Debug', {
     physicsWireframe: false,
     perfHud: true,
+    // A/B: "vary" steps physics per-frame (pairs best with ecctrl's camera,
+    // which follows the raw body position); fixed 1/60 is the alternative.
+    fixedTimestep: false,
   });
   // Brief freeze-frame when a swipe connects — cheap, very effective punch
   const hitStop = useCombatStore((s) => s.hitStopActive);
 
   return (
     <div id="game-canvas">
+      {/* dpr capped at 1.5: full retina/4K resolution + bloom is the main
+          frame-rate cost. Canvas antialias off — the EffectComposer renders
+          offscreen with its own MSAA, so canvas MSAA is pure waste. */}
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         camera={{ fov: 55, near: 0.1, far: 300 }}
-        gl={{ antialias: true, powerPreference: 'high-performance', stencil: false }}
+        gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
       >
         <color attach="background" args={['#1b1e2b']} />
         <fog attach="fog" args={['#1b1e2b', 35, 120]} />
@@ -48,7 +54,11 @@ export function GameCanvas() {
             tuned under it); revisit fixed 1/60 + interpolation if combat ever
             needs determinism or high-refresh consistency. */}
         <Suspense fallback={null}>
-          <Physics timeStep="vary" paused={hitStop} debug={DEBUG && physicsWireframe}>
+          <Physics
+            timeStep={fixedTimestep ? 1 / 60 : 'vary'}
+            paused={hitStop}
+            debug={DEBUG && physicsWireframe}
+          >
             <KeyboardControls map={keyboardMap}>
               <Player />
             </KeyboardControls>
