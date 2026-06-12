@@ -13,7 +13,6 @@ import { Effects } from './Effects';
 import { Enemies } from './enemies/Enemies';
 import { GameClock } from './GameClock';
 import { PointerLockOnClick } from './PointerLockOnClick';
-import { Companion } from './player/Companion';
 import { Player } from './player/Player';
 import { SceneManager } from './SceneManager';
 import { Lights } from './world/Lights';
@@ -77,7 +76,6 @@ export function GameCanvas() {
             <KeyboardControls map={keyboardMap}>
               <Player />
             </KeyboardControls>
-            <Companion />
             <SceneManager />
             <Projectiles />
             <Enemies />

@@ -37,9 +37,6 @@ export function SceneManager() {
       body.setTranslation({ x, y, z }, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     }
-    // the other legend arrives at your side
-    runtime.companion?.setTranslation({ x: x + 1.5, y, z: z + 1.5 }, true);
-    runtime.companion?.setLinvel({ x: 0, y: 0, z: 0 }, true);
     clearProjectiles(); // no records sail between worlds
     useRunStore.getState().resetRun(); // a run is a run — points don't carry over
     usePlayerStore.getState().respawnPlayer();

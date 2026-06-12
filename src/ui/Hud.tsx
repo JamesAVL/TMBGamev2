@@ -1,9 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLASSIC_CONTROLS } from '../debug/flags';
 import { sfx } from '../audio/sfx';
-import { BOSS_LOCK_LINE, SWITCH_LINES, TUNDRA_ENTRY_EXCHANGES } from '../game/dialogue/banter';
+import {
+  BOSS_LOCK_LINE,
+  KILL_QUIPS,
+  LOW_HP_QUIPS,
+  OFFSCREEN_QUIPS,
+  SWITCH_LINES,
+  TUNDRA_ENTRY_EXCHANGES,
+} from '../game/dialogue/banter';
 import { SKILLS, type SkillOwner } from '../game/progression/skills';
-import { runtime } from '../game/combat/runtime';
 import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { useProfileStore } from '../stores/profileStore';
@@ -171,15 +177,7 @@ export function Hud() {
           showBubble(BOSS_LOCK_LINE);
           return;
         }
-        const player = runtime.player?.group;
-        const companion = runtime.companion;
-        if (!player || !companion) return;
-        const pp = player.translation();
-        const cp = companion.translation();
-        player.setTranslation({ x: cp.x, y: cp.y + 0.2, z: cp.z }, true);
-        player.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        companion.setTranslation({ x: pp.x, y: pp.y, z: pp.z }, true);
-        companion.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        // The other legend is just off-screen — the swap happens in place.
         useProfileStore.getState().switchCharacter();
         sfx.spend();
         const incoming = useProfileStore.getState().character;
@@ -189,6 +187,42 @@ export function Hud() {
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
+  }, [showBubble]);
+
+  // The absent legend keeps up a presence: ambient quips on a loose timer…
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (Math.random() > 0.45) return;
+      if (useRunStore.getState().panelOpen || usePlayerStore.getState().dead) return;
+      const absent = useProfileStore.getState().character === 'vince' ? 'howard' : 'vince';
+      const line = pick(OFFSCREEN_QUIPS[absent]);
+      if (line) showBubble(line);
+    }, 28000);
+    return () => clearInterval(interval);
+  }, [showBubble]);
+
+  // …a heckle when you're nearly done (once per scrape)…
+  useEffect(() => {
+    return usePlayerStore.subscribe((s, prev) => {
+      if (s.dead || s.hp > 2 || prev.hp <= 2) return;
+      const absent = useProfileStore.getState().character === 'vince' ? 'howard' : 'vince';
+      const line = pick(LOW_HP_QUIPS[absent]);
+      if (line) showBubble(line);
+    });
+  }, [showBubble]);
+
+  // …and the odd review of your kills.
+  useEffect(() => {
+    let lastQuipAt = 0;
+    return useRunStore.subscribe((s, prev) => {
+      const gained = s.level > prev.level || s.xp > prev.xp;
+      if (!gained) return;
+      if (Date.now() - lastQuipAt < 20000 || Math.random() > 0.18) return;
+      lastQuipAt = Date.now();
+      const absent = useProfileStore.getState().character === 'vince' ? 'howard' : 'vince';
+      const line = pick(KILL_QUIPS[absent]);
+      if (line) showBubble(line);
+    });
   }, [showBubble]);
 
   // Realm-entry exchange: one line, then the reply
