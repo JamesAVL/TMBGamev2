@@ -59,7 +59,7 @@ export function MeleeEnemy({
 }: {
   id: string;
   tuning: MeleeTuning;
-  eyeMaterialRef?: RefObject<THREE.MeshStandardMaterial | null>;
+  eyeMaterialRef?: RefObject<THREE.MeshToonMaterial | null>;
   eyeIdleIntensity?: number;
   eyeFlareIntensity?: number;
   lineHeight?: number;
@@ -73,7 +73,7 @@ export function MeleeEnemy({
   const lastSeenHitAt = useRef(-Infinity);
   const spawnedAt = useRef(0);
   const flashing = useRef(false);
-  const flashMaterials = useRef<THREE.MeshStandardMaterial[]>([]);
+  const flashMaterials = useRef<THREE.MeshToonMaterial[]>([]);
   const toPlayer = useMemo(() => new THREE.Vector3(), []);
 
   // Reactive bits (rare transitions only): the aggro speech line
@@ -86,9 +86,9 @@ export function MeleeEnemy({
     const body = bodyRef.current;
     if (body) runtime.enemyBodies.set(id, body);
     // Collect materials for the hit flash (everything except the eye)
-    const mats: THREE.MeshStandardMaterial[] = [];
+    const mats: THREE.MeshToonMaterial[] = [];
     groupRef.current?.traverse((obj) => {
-      if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshStandardMaterial) {
+      if (obj instanceof THREE.Mesh && obj.material instanceof THREE.MeshToonMaterial) {
         if (obj.material !== eyeMaterialRef?.current) mats.push(obj.material);
       }
     });

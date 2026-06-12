@@ -1,3 +1,5 @@
+import { ToonOutline } from '../look/ToonOutline';
+import { getGradientMap } from '../look/toon';
 import { useRef } from 'react';
 import type * as THREE from 'three';
 import { MeleeEnemy, type MeleeTuning } from './MeleeEnemy';
@@ -22,25 +24,28 @@ const TUNING: MeleeTuning = {
 function ParkaPersonModel({
   hoodVoidRef,
 }: {
-  hoodVoidRef: React.RefObject<THREE.MeshStandardMaterial | null>;
+  hoodVoidRef: React.RefObject<THREE.MeshToonMaterial | null>;
 }) {
   return (
     <group position={[0, -0.08, 0]}>
       {/* Squat parka body */}
       <mesh castShadow position={[0, -0.1, 0]}>
         <coneGeometry args={[0.42, 0.85, 10]} />
-        <meshStandardMaterial color="#5f6e44" roughness={0.85} />
+        <meshToonMaterial gradientMap={getGradientMap()} color="#5f6e44" />
+        <ToonOutline />
       </mesh>
       {/* Hood: a great fur-trimmed ring... */}
       <mesh castShadow position={[0, 0.52, 0.02]} rotation={[0.25, 0, 0]}>
         <torusGeometry args={[0.26, 0.11, 10, 18]} />
-        <meshStandardMaterial color="#d8cfb4" roughness={1} />
+        <meshToonMaterial gradientMap={getGradientMap()} color="#d8cfb4" />
+        <ToonOutline />
       </mesh>
       {/* ...around a face that is only darkness. During the windup the void
           glows — it is showing you your deepest desire. Do not look. */}
       <mesh position={[0, 0.52, 0.02]} rotation={[0.25, 0, 0]}>
         <circleGeometry args={[0.2, 16]} />
-        <meshStandardMaterial
+        <meshToonMaterial
+          gradientMap={getGradientMap()}
           ref={hoodVoidRef}
           color="#06070c"
           emissive="#ffd9a0"
@@ -50,18 +55,18 @@ function ParkaPersonModel({
       {/* Mittens */}
       <mesh castShadow position={[-0.34, 0.05, 0.12]}>
         <sphereGeometry args={[0.09, 8, 8]} />
-        <meshStandardMaterial color="#8a4f3d" />
+        <meshToonMaterial gradientMap={getGradientMap()} color="#8a4f3d" />
       </mesh>
       <mesh castShadow position={[0.34, 0.05, 0.12]}>
         <sphereGeometry args={[0.09, 8, 8]} />
-        <meshStandardMaterial color="#8a4f3d" />
+        <meshToonMaterial gradientMap={getGradientMap()} color="#8a4f3d" />
       </mesh>
     </group>
   );
 }
 
 export function ParkaPerson({ id }: { id: string }) {
-  const hoodVoidRef = useRef<THREE.MeshStandardMaterial>(null);
+  const hoodVoidRef = useRef<THREE.MeshToonMaterial>(null);
   return (
     <MeleeEnemy
       id={id}

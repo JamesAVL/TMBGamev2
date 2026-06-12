@@ -1,12 +1,23 @@
-import { Bloom, EffectComposer } from '@react-three/postprocessing';
+import {
+  Bloom,
+  BrightnessContrast,
+  EffectComposer,
+  HueSaturation,
+  Noise,
+  Vignette,
+} from '@react-three/postprocessing';
 
-// luminanceThreshold 1 means only emissive intensities above 1 bloom — the
-// Hitcher's polo-mint eye and the swipe arc, nothing else.
+// The collage finish: bloom for the glows, then a gentle grade — saturation
+// lift, a touch of contrast, vignette, and film grain. luminanceThreshold 1
+// keeps bloom to emissives only (eyes, embers, telegraphs).
 export function Effects() {
   return (
-    // 4x MSAA instead of the default 8x — visually near-identical, much cheaper
     <EffectComposer multisampling={4}>
       <Bloom mipmapBlur luminanceThreshold={1} intensity={0.8} />
+      <HueSaturation saturation={0.15} />
+      <BrightnessContrast contrast={0.06} />
+      <Vignette darkness={0.55} offset={0.3} />
+      <Noise premultiply opacity={0.35} />
     </EffectComposer>
   );
 }

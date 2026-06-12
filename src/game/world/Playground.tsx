@@ -1,8 +1,10 @@
+import { getGradientMap } from '../look/toon';
 import { Grid } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import { useSceneStore } from '../../stores/sceneStore';
 import { Block } from './Block';
 import { Portal } from './Portal';
+import { KayProp } from './props/KayProp';
 
 // Step 1 greybox: every fixture exists to make one aspect of movement feel
 // judgeable. Layout (top view, +x east, +z south, spawn at origin):
@@ -58,7 +60,7 @@ function Stairs({
           position={[x, (rise * (i + 1)) / 2, zStart - run * (i + 0.5)]}
         >
           <boxGeometry args={[width, rise * (i + 1), run]} />
-          <meshStandardMaterial color={color} />
+          <meshToonMaterial gradientMap={getGradientMap()} color={color} />
         </mesh>
       ))}
     </RigidBody>
@@ -73,7 +75,7 @@ export function Playground() {
       <RigidBody type="fixed" colliders="cuboid">
         <mesh receiveShadow position={[0, -0.25, 0]}>
           <boxGeometry args={[80, 0.5, 80]} />
-          <meshStandardMaterial color="#8a8f98" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#8a8f98" />
         </mesh>
       </RigidBody>
       <Grid
@@ -131,11 +133,9 @@ export function Playground() {
       <Block size={[0.6, 2.2, 8]} position={[-6.2, 1.1, 12]} color="#6a5f5a" />
       <Block size={[4.8, 0.3, 8]} position={[-8, 2.35, 12]} color="#6a5f5a" />
 
-      {/* Spawn area: scatter crates + pillar — strafe/bump feel, shadow sanity */}
-      <Block size={[1, 1, 1]} position={[3, 0.5, 3]} color="#a8744f" />
-      <Block size={[1, 1, 1]} position={[4.3, 0.5, 2.2]} color="#a8744f" />
-      <Block size={[0.5, 0.5, 0.5]} position={[3, 1.25, 3]} color="#bd8a62" />
-      <Block size={[0.5, 0.5, 0.5]} position={[-3, 0.25, 4]} color="#bd8a62" />
+      {/* Spawn area: KayKit clutter + pillar — strafe/bump feel, shadow sanity */}
+      <KayProp name="box_stacked" position={[3.4, 0, 2.8]} rotation={[0, 0.4, 0]} physical />
+      <KayProp name="barrel_small_stack" position={[-3, 0, 4]} rotation={[0, -0.7, 0]} physical />
       <Block size={[1, 4, 1]} position={[-5, 2, -3]} color="#a8744f" />
 
       {/* The door home to the shop */}

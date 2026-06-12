@@ -1,3 +1,5 @@
+import { ToonOutline } from '../../look/ToonOutline';
+import { getGradientMap } from '../../look/toon';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
@@ -7,6 +9,7 @@ import { useSceneStore } from '../../../stores/sceneStore';
 import { runtime } from '../../combat/runtime';
 import { Block } from '../Block';
 import { Portal } from '../Portal';
+import { KayProp } from '../props/KayProp';
 
 // THE NABOOTIQUE — the shop between runs. Warm, cluttered, faintly mystical.
 // Naboo holds the counter at the north end; the doors out are to the south.
@@ -42,22 +45,23 @@ function NabooNPC() {
         {/* Robe */}
         <mesh castShadow position={[0, 0.55, 0]}>
           <capsuleGeometry args={[0.26, 0.6, 6, 14]} />
-          <meshStandardMaterial color="#3a8a8a" roughness={0.85} />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#3a8a8a" />
+          <ToonOutline />
         </mesh>
         {/* Sash */}
         <mesh castShadow position={[0, 0.6, 0]}>
           <torusGeometry args={[0.27, 0.05, 8, 16]} />
-          <meshStandardMaterial color="#c4a86a" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#c4a86a" />
         </mesh>
         {/* Head */}
         <mesh castShadow position={[0, 1.12, 0]}>
           <sphereGeometry args={[0.2, 14, 12]} />
-          <meshStandardMaterial color="#d8b894" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#d8b894" />
         </mesh>
         {/* Turban */}
         <mesh castShadow position={[0, 1.28, 0]}>
           <sphereGeometry args={[0.21, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial color="#e8e4da" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#e8e4da" />
         </mesh>
         <mesh position={[0, 1.3, 0.18]}>
           <sphereGeometry args={[0.045, 8, 8]} />
@@ -66,41 +70,16 @@ function NabooNPC() {
         {/* Heavy-lidded eyes (facing the door, +z) */}
         <mesh position={[-0.07, 1.13, 0.18]}>
           <sphereGeometry args={[0.025, 8, 8]} />
-          <meshStandardMaterial color="#16161a" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#16161a" />
         </mesh>
         <mesh position={[0.07, 1.13, 0.18]}>
           <sphereGeometry args={[0.025, 8, 8]} />
-          <meshStandardMaterial color="#16161a" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#16161a" />
         </mesh>
       </group>
       <Html position={[0, 1.9, 0]} center>
         <div className="portal-label">NABOO</div>
       </Html>
-    </group>
-  );
-}
-
-// A shelf of unexplainable tat: little randomized boxes and orbs.
-function TatShelf({ position, seed }: { position: [number, number, number]; seed: number }) {
-  const colors = ['#d84f9a', '#7fd4ff', '#ffd76e', '#9fd08a', '#c4332f', '#b8c4e8'];
-  return (
-    <group position={position}>
-      <Block size={[3.2, 0.12, 0.7]} position={[0, 0, 0]} color="#5a4a36" />
-      {Array.from({ length: 4 }, (_, i) => {
-        const c = colors[(seed + i * 2) % colors.length]!;
-        const x = -1.2 + i * 0.8;
-        return (i + seed) % 2 === 0 ? (
-          <mesh key={i} castShadow position={[x, 0.22, 0]}>
-            <boxGeometry args={[0.3, 0.32, 0.3]} />
-            <meshStandardMaterial color={c} roughness={0.6} />
-          </mesh>
-        ) : (
-          <mesh key={i} castShadow position={[x, 0.24, 0]}>
-            <sphereGeometry args={[0.17, 10, 8]} />
-            <meshStandardMaterial color={c} roughness={0.4} emissive={c} emissiveIntensity={0.2} />
-          </mesh>
-        );
-      })}
     </group>
   );
 }
@@ -112,13 +91,13 @@ export function Nabootique() {
     <>
       {/* Atmosphere: warm, lived-in — and properly lit where it matters */}
       <color attach="background" args={['#171221']} />
-      <hemisphereLight args={['#ffd9b0', '#241a2e', 0.8]} />
+      <hemisphereLight args={['#ffd9b0', '#241a2e', 0.65]} />
       {/* the counter spot: Naboo works under good light */}
       <spotLight
         position={[0, 4.2, -3.2]}
         angle={0.65}
         penumbra={0.6}
-        intensity={26}
+        intensity={32}
         color="#ffe2c0"
         distance={12}
         castShadow
@@ -140,20 +119,57 @@ export function Nabootique() {
       {/* Rug */}
       <mesh position={[0, 0.012, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[2.6, 24]} />
-        <meshStandardMaterial color="#8a3a5a" roughness={1} />
+        <meshToonMaterial gradientMap={getGradientMap()} color="#8a3a5a" />
       </mesh>
 
       {/* The counter, and the shaman behind it */}
       <Block size={[5, 1.1, 1]} position={[0, 0.55, -4]} color="#5a4a36" />
       <NabooNPC />
 
-      {/* Tat. Do not touch unless buying. */}
-      <TatShelf position={[-6.8, 1.4, -3]} seed={0} />
-      <TatShelf position={[-6.8, 2.3, -3]} seed={1} />
-      <TatShelf position={[6.8, 1.4, -1]} seed={2} />
-      <TatShelf position={[6.8, 2.3, -1]} seed={3} />
-      <TatShelf position={[-6.8, 1.8, 3]} seed={4} />
-      <TatShelf position={[6.8, 1.8, 4]} seed={5} />
+      {/* Tat. Do not touch unless buying. (KayKit Dungeon Remastered, CC0) */}
+      <KayProp
+        name="shelf_large"
+        position={[-7.4, 0, -3]}
+        rotation={[0, Math.PI / 2, 0]}
+        physical
+      />
+      <KayProp
+        name="shelf_small"
+        position={[-7.4, 0, 1.2]}
+        rotation={[0, Math.PI / 2, 0]}
+        physical
+      />
+      <KayProp
+        name="shelf_large"
+        position={[7.4, 0, -1]}
+        rotation={[0, -Math.PI / 2, 0]}
+        physical
+      />
+      <KayProp
+        name="shelf_small"
+        position={[7.4, 0, 3.4]}
+        rotation={[0, -Math.PI / 2, 0]}
+        physical
+      />
+      <KayProp name="crates_stacked" position={[-6.6, 0, 6.2]} rotation={[0, 0.5, 0]} physical />
+      <KayProp name="keg_decorated" position={[6.8, 0, 6.4]} physical />
+      <KayProp name="barrel_large_decorated" position={[-6.9, 0, -6.5]} physical />
+      <KayProp
+        name="box_small_decorated"
+        position={[6.7, 0, -5.9]}
+        rotation={[0, -0.4, 0]}
+        physical
+      />
+      <KayProp name="chest_gold" position={[2.9, 0, -6.6]} rotation={[0, Math.PI, 0]} physical />
+      <KayProp name="table_long" position={[-3.4, 0, -6.4]} physical />
+      <KayProp name="chair" position={[-4.3, 0, -5.3]} rotation={[0, 2.6, 0]} />
+      {/* counter clutter */}
+      <KayProp name="candle_triple" position={[-1.6, 1.1, -4]} />
+      <KayProp name="coin_stack_medium" position={[1.4, 1.1, -4]} />
+      <KayProp name="bottle_A_labeled_green" position={[0.6, 1.1, -4.2]} />
+      <KayProp name="bottle_B_brown" position={[-0.6, 1.1, -3.8]} />
+      {/* the house banner */}
+      <KayProp name="banner_patternA_red" position={[3.4, 3.9, -7.7]} />
 
       {/* The doors out (south wall) */}
       <Portal position={[-4, 1.7, 7.2]} label="THE TUNDRA" onEnter={() => setScene('tundra')} />
