@@ -33,5 +33,10 @@ parameters, physics wireframe toggle) and the r3f-perf HUD.
 
 ## Controls
 
-WASD / arrows — move · Shift — sprint · Space — jump ·
-drag mouse — orbit camera · scroll — zoom
+Click the game to capture the mouse, then:
+
+mouse — steer · W/S — forward/back · A/D — strafe ·
+Shift — sprint · Space — jump · scroll — zoom · Esc — release mouse
+
+Append `?classic` to the URL for the original scheme (drag-to-orbit camera,
+character turns toward travel direction) to A/B the two feels.
