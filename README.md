@@ -5,12 +5,13 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
-**Step 2 — Fight**: the greybox movement playground now has its first enemy —
-the Hitcher, a green cockney toll-collector with a glowing polo-mint eye.
-Swipe him with a click; he winds up, lunges, and knocks you about. Hit flash,
-knockback, hit-stop, synthesized sound, death and respawn included. All audio
-is synthesized Web Audio and all art is original primitives — no third-party
-assets yet.
+**Step 3 — One realm**: a doorway in the greybox range now leads to THE
+TUNDRA — a glacier-walled run with sliding ice, crosswind gusts, Frost
+Bailiff skirmishes, a three-wave arena behind an ice gate, and a boss: the
+Black Frost, a velvet-voiced cold front who can only be hurt while brazier
+embers have broken his composure. Clear it for the way home; die and the
+Tundra keeps your deposit. All audio is synthesized Web Audio and all art is
+original primitives — no third-party assets yet.
 
 ## Prerequisites
 

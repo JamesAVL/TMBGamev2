@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { ensureAudio, sfx } from '../../audio/sfx';
 import { useCombatStore } from '../../stores/combatStore';
 import { usePlayerStore } from '../../stores/playerStore';
+import { useSceneStore } from '../../stores/sceneStore';
 import { runtime } from '../combat/runtime';
 import { movementConfig } from './movementConfig';
 
@@ -46,6 +47,7 @@ export function PlayerCombat() {
 
       let connected = false;
       let killed = false;
+      let immune = false;
       for (const [id, enemyBody] of runtime.enemyBodies) {
         if (!useCombatStore.getState().enemies[id]?.alive) continue;
         const t = enemyBody.translation();
@@ -56,13 +58,29 @@ export function PlayerCombat() {
         if (toEnemy.dot(forward) < ATTACK_HALF_ANGLE_COS) continue;
         const result = useCombatStore.getState().damageEnemy(id, 1);
         if (result === 'none') continue;
+        if (result === 'immune') {
+          immune = true;
+          continue;
+        }
         connected = true;
         enemyBody.applyImpulse({ x: toEnemy.x * 3, y: 0.9, z: toEnemy.z * 3 }, true);
         if (result === 'dead') killed = true;
       }
+      // Hittable props (braziers etc.) share the same cone check
+      for (const target of runtime.swipeTargets.values()) {
+        const t = target.position();
+        toEnemy.set(t.x - p.x, 0, t.z - p.z);
+        if (toEnemy.length() > ATTACK_RANGE) continue;
+        toEnemy.normalize();
+        if (toEnemy.dot(forward) < ATTACK_HALF_ANGLE_COS) continue;
+        target.onHit();
+        connected = true;
+      }
       if (connected) {
         sfx.hit();
         useCombatStore.getState().triggerHitStop(70);
+      } else if (immune) {
+        sfx.clink(); // bounced off — he's unbothered
       }
       if (killed) sfx.enemyDeath();
     };
@@ -108,13 +126,19 @@ export function PlayerCombat() {
     // Safety net: anything that slips below the world goes home
     if (body && body.translation().y < VOID_Y) teleportHome();
 
-    // Death → brief pause → teleport home with full hp
+    // Death → brief pause → respawn. Dying inside a realm ends the run and
+    // sends you home to the greybox (the SceneManager handles the teleport).
     const player = usePlayerStore.getState();
     if (player.dead) {
       if (deadAtRef.current === 0) deadAtRef.current = now;
       if (now - deadAtRef.current > RESPAWN_DELAY) {
-        teleportHome();
         deadAtRef.current = 0;
+        const scenes = useSceneStore.getState();
+        if (scenes.scene !== 'greybox') {
+          scenes.setScene('greybox');
+        } else {
+          teleportHome();
+        }
         player.respawnPlayer();
       }
     }

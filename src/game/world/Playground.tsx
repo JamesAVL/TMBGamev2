@@ -1,36 +1,16 @@
 import { Grid } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
+import { useSceneStore } from '../../stores/sceneStore';
+import { Block } from './Block';
+import { Portal } from './Portal';
 
 // Step 1 greybox: every fixture exists to make one aspect of movement feel
 // judgeable. Layout (top view, +x east, +z south, spawn at origin):
 //   west  — ramp bank 15/30/45/60° (60° must refuse: > slopeMaxAngle ~57°)
 //   east  — shallow + steep stair flights with landings, beam to a far block
 //   north — jump-height platforms (0.5/0.9/1.3/1.8 m), then gap row (1.5–4.5 m)
-//   south — camera-collision corridor, L-corner wall, low tunnel
+//   south — camera-collision corridor, L-corner wall, low tunnel, Tundra door
 //   spawn — scatter crates and a pillar for strafe/bump feel
-
-type Vec3 = [number, number, number];
-
-function Block({
-  size,
-  position,
-  rotation,
-  color,
-}: {
-  size: Vec3;
-  position: Vec3;
-  rotation?: Vec3;
-  color: string;
-}) {
-  return (
-    <RigidBody type="fixed" colliders="cuboid" position={position} rotation={rotation}>
-      <mesh castShadow receiveShadow>
-        <boxGeometry args={size} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-    </RigidBody>
-  );
-}
 
 const RAMP_LENGTH = 10;
 const RAMP_THICKNESS = 0.4;
@@ -86,6 +66,7 @@ function Stairs({
 }
 
 export function Playground() {
+  const setScene = useSceneStore((s) => s.setScene);
   return (
     <>
       {/* Ground slab (top at y=0) + non-physical grid for speed readability */}
@@ -156,6 +137,12 @@ export function Playground() {
       <Block size={[0.5, 0.5, 0.5]} position={[3, 1.25, 3]} color="#bd8a62" />
       <Block size={[0.5, 0.5, 0.5]} position={[-3, 0.25, 4]} color="#bd8a62" />
       <Block size={[1, 4, 1]} position={[-5, 2, -3]} color="#a8744f" />
+
+      {/* The door to the Tundra — framed in glacier ice, humming quietly */}
+      <Block size={[1, 3.4, 1]} position={[-2.4, 1.7, 22]} color="#9fc4dd" />
+      <Block size={[1, 3.4, 1]} position={[2.4, 1.7, 22]} color="#9fc4dd" />
+      <Block size={[5.8, 1, 1]} position={[0, 3.9, 22]} color="#9fc4dd" />
+      <Portal position={[0, 1.7, 22]} label="THE TUNDRA" onEnter={() => setScene('tundra')} />
 
       {/* Perimeter rim — keeps the player on the slab (no respawn logic yet) */}
       <Block size={[80, 1.5, 0.5]} position={[0, 0.75, -39.75]} color="#4a4e57" />
