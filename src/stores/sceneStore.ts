@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 export type SceneId = 'greybox' | 'tundra';
-export type TundraPhase = 'approach' | 'waves' | 'boss' | 'cleared';
+export type TundraPhase = 'approach' | 'waves' | 'boss' | 'egg' | 'cleared';
 
 type TundraProgress = { phase: TundraPhase; wave: number };
 

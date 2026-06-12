@@ -14,7 +14,7 @@ const SCENE_SPAWN: Record<SceneId, [number, number, number]> = {
 
 const SCENE_OBJECTIVE: Record<SceneId, string> = {
   greybox: 'The range. A cold doorway hums to the south.',
-  tundra: 'Head north. Mind the locals.',
+  tundra: 'Head north. The Parka People keep something precious.',
 };
 
 const SCENE_ENEMIES: Record<SceneId, typeof GREYBOX_SPAWNS> = {

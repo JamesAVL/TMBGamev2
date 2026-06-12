@@ -49,13 +49,15 @@ export function Hud() {
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />
         ))}
       </div>
-      {scene === 'tundra' && phase === 'cleared' && <div className="hud-banner">REALM CLEARED</div>}
+      {scene === 'tundra' && phase === 'cleared' && (
+        <div className="hud-banner">THE EGG OF MANTUMBI IS YOURS</div>
+      )}
       {dead && (
         <div className="hud-death">
           <h2>{scene === 'tundra' ? 'FROZEN OUT.' : 'EELED.'}</h2>
           <p>
             {scene === 'tundra'
-              ? 'The Tundra keeps your deposit. Home you go…'
+              ? 'An offering to the Frost. Home you go…'
               : 'The road takes its toll. Back in a tick…'}
           </p>
         </div>

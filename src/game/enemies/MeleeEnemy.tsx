@@ -26,7 +26,6 @@ const STAGGER = 0.35;
 const HIT_FLASH = 0.15;
 const DEATH_SHRINK = 0.35;
 const SPAWN_POP = 0.2;
-const EYE_IDLE_INTENSITY = 2;
 const VOID_Y = -10;
 
 type AiState = 'idle' | 'chase' | 'windup' | 'cooldown' | 'stagger' | 'dead';
@@ -53,12 +52,16 @@ export function MeleeEnemy({
   id,
   tuning,
   eyeMaterialRef,
+  eyeIdleIntensity = 2,
+  eyeFlareIntensity = 6,
   lineHeight = 1.7,
   children,
 }: {
   id: string;
   tuning: MeleeTuning;
   eyeMaterialRef?: RefObject<THREE.MeshStandardMaterial | null>;
+  eyeIdleIntensity?: number;
+  eyeFlareIntensity?: number;
   lineHeight?: number;
   children: ReactNode;
 }) {
@@ -181,8 +184,10 @@ export function MeleeEnemy({
     if (eyeMaterialRef?.current) {
       const eyeTarget =
         ai.current === 'windup'
-          ? EYE_IDLE_INTENSITY + 4 * (1 - Math.max(0, stateUntil.current - now) / tuning.windup)
-          : EYE_IDLE_INTENSITY;
+          ? eyeIdleIntensity +
+            (eyeFlareIntensity - eyeIdleIntensity) *
+              (1 - Math.max(0, stateUntil.current - now) / tuning.windup)
+          : eyeIdleIntensity;
       eyeMaterialRef.current.emissiveIntensity +=
         (eyeTarget - eyeMaterialRef.current.emissiveIntensity) * Math.min(1, delta * 14);
     }

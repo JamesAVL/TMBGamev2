@@ -126,4 +126,10 @@ export const sfx = {
     tone(c, m, 'sine', 300, 900, 0.4, 0.3);
     tone(c, m, 'sine', 450, 1350, 0.4, 0.2);
   },
+  treasure() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sine', 523, 523, 0.12, 0.3);
+    tone(c, m, 'sine', 659, 659, 0.18, 0.3);
+    tone(c, m, 'sine', 784, 1046, 0.4, 0.3);
+  },
 };

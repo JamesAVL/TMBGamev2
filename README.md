@@ -6,12 +6,14 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 ## Status
 
 **Step 3 — One realm**: a doorway in the greybox range now leads to THE
-TUNDRA — a glacier-walled run with sliding ice, crosswind gusts, Frost
-Bailiff skirmishes, a three-wave arena behind an ice gate, and a boss: the
-Black Frost, a velvet-voiced cold front who can only be hurt while brazier
-embers have broken his composure. Clear it for the way home; die and the
-Tundra keeps your deposit. All audio is synthesized Web Audio and all art is
-original primitives — no third-party assets yet.
+TUNDRA — a glacier-walled run with sliding ice, crosswind gusts, and the
+Parka People: diminutive keepers of the Egg of Mantumbi whose hooded faces
+glow with your deepest desire just before they strike. Survive their waves,
+face the Black Frost they summon (hurt him only while brazier embers have
+broken his composure), then claim the Egg for the way home. Die and you're
+an offering. All audio is synthesized Web Audio and all art is original
+primitives — no third-party assets yet. Lore reference: the Mighty Boosh
+fandom wiki; all dialogue is original.
 
 ## Prerequisites
 

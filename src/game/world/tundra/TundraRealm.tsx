@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sparkles } from '@react-three/drei';
+import type * as THREE from 'three';
 import { sfx } from '../../../audio/sfx';
 import { aliveCount, useCombatStore } from '../../../stores/combatStore';
 import { usePlayerStore } from '../../../stores/playerStore';
@@ -72,8 +73,54 @@ function TundraForces() {
   return null;
 }
 
+// The Egg of Mantumbi — what the Parka People keep, and what you came for.
+// Claimable once the Black Frost has been seen off.
+function EggOfMantumbi() {
+  const phase = useSceneStore((s) => s.tundra.phase);
+  const eggRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    const group = eggRef.current;
+    if (!group) return;
+    group.rotation.y = state.clock.elapsedTime * 0.5;
+    group.position.y = 1.25 + Math.sin(state.clock.elapsedTime * 1.6) * 0.08;
+
+    if (phase !== 'egg') return;
+    const body = runtime.player?.group;
+    if (!body) return;
+    const t = body.translation();
+    const dx = t.x;
+    const dz = t.z + 48;
+    if (dx * dx + dz * dz < 2.2) {
+      sfx.treasure();
+      const scenes = useSceneStore.getState();
+      scenes.setTundra({ phase: 'cleared' });
+      scenes.setObjective('The Egg of Mantumbi is yours. The way home is open.');
+    }
+  });
+
+  if (phase === 'cleared') return null; // claimed
+
+  return (
+    <group position={[0, 0, -48]}>
+      <Block size={[1.2, 0.9, 1.2]} position={[0, 0.45, 0]} color="#b4d4e8" />
+      <group ref={eggRef}>
+        <mesh castShadow scale={[1, 1.35, 1]}>
+          <sphereGeometry args={[0.42, 18, 14]} />
+          <meshStandardMaterial
+            color="#e8c050"
+            emissive="#ffae34"
+            emissiveIntensity={phase === 'egg' ? 1.6 : 0.4}
+            roughness={0.3}
+          />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
 // Drives the run: trigger the waves, melt the gate, summon the headliner,
-// declare the realm cleared.
+// open the egg for claiming, declare the realm cleared.
 function TundraDirector() {
   const waveIds = useRef<string[]>([]);
   const nextWaveAt = useRef(0);
@@ -89,7 +136,7 @@ function TundraDirector() {
     if (phase === 'approach') {
       if (body.translation().z < -7) {
         scenes.setTundra({ phase: 'waves', wave: 1 });
-        scenes.setObjective('Survive the audit — wave 1 of 3.');
+        scenes.setObjective('The keepers defend the Egg — wave 1 of 3.');
         const defs = TUNDRA_WAVES[0] ?? [];
         waveIds.current = defs.map((d) => d.id);
         combat.spawnEnemies(defs);
@@ -102,7 +149,7 @@ function TundraDirector() {
       if (aliveCount(combat.enemies, waveIds.current) > 0) return;
       if (wave >= TUNDRA_WAVES.length) {
         scenes.setTundra({ phase: 'boss' });
-        scenes.setObjective('The headliner awaits. Embers break his composure.');
+        scenes.setObjective('They have summoned the Black Frost. Embers break his composure.');
         combat.spawnEnemies([BLACK_FROST]);
         sfx.freezeSnap();
         return;
@@ -115,7 +162,7 @@ function TundraDirector() {
         nextWaveAt.current = 0;
         const next = wave + 1;
         scenes.setTundra({ wave: next });
-        scenes.setObjective(`Survive the audit — wave ${next} of 3.`);
+        scenes.setObjective(`The keepers defend the Egg — wave ${next} of 3.`);
         const defs = TUNDRA_WAVES[next - 1] ?? [];
         waveIds.current = defs.map((d) => d.id);
         combat.spawnEnemies(defs);
@@ -127,8 +174,8 @@ function TundraDirector() {
     if (phase === 'boss') {
       const boss = combat.enemies['blackfrost'];
       if (boss && !boss.alive) {
-        scenes.setTundra({ phase: 'cleared' });
-        scenes.setObjective('Realm cleared. The way home is open, south of the stage.');
+        scenes.setTundra({ phase: 'egg' });
+        scenes.setObjective('Claim the Egg of Mantumbi.');
       }
     }
   });
@@ -216,6 +263,9 @@ export function TundraRealm() {
 
       {/* The headliner (mounts when the director spawns his store entry) */}
       <BlackFrost />
+
+      {/* What everyone is here for */}
+      <EggOfMantumbi />
 
       {/* Doors */}
       <Portal

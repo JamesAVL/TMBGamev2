@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type EnemyKind = 'hitcher' | 'bailiff' | 'blackfrost';
+export type EnemyKind = 'hitcher' | 'parka' | 'blackfrost';
 
 export type EnemySpawnDef = {
   id: string;
