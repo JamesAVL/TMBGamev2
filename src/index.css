@@ -282,6 +282,120 @@ body,
   padding: 5px 12px;
 }
 
+/* In-run XP */
+.hud-xp {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(380px, 50vw);
+}
+
+.hud-xp-level {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(244, 241, 232, 0.4);
+  border-radius: 50%;
+  background: rgba(11, 13, 20, 0.55);
+}
+
+.hud-xp-track {
+  flex: 1;
+  height: 7px;
+  border: 1px solid rgba(244, 241, 232, 0.3);
+  border-radius: 999px;
+  background: rgba(11, 13, 20, 0.55);
+  overflow: hidden;
+}
+
+.hud-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e8c050, #ffae34);
+  transition: width 0.2s ease-out;
+}
+
+/* Level-up: choose one of three */
+.hud-pick {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(11, 13, 20, 0.66);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+}
+
+.hud-pick h3 {
+  font-size: 26px;
+  letter-spacing: 0.3em;
+  color: #ffd76e;
+}
+
+.hud-pick > p {
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.7;
+  margin-bottom: 16px;
+}
+
+.hud-pick-cards {
+  display: flex;
+  gap: 14px;
+}
+
+.hud-pick-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 180px;
+  padding: 18px 16px;
+  text-align: left;
+  color: #f4f1e8;
+  font-family: inherit;
+  background: rgba(24, 28, 40, 0.92);
+  border: 1px solid rgba(244, 241, 232, 0.25);
+  border-radius: 12px;
+  cursor: pointer;
+  transition:
+    transform 0.12s,
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.hud-pick-card:hover {
+  transform: translateY(-4px);
+  border-color: #ffd76e;
+  background: rgba(34, 38, 52, 0.95);
+}
+
+.hud-pick-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.hud-pick-blurb {
+  font-size: 12px;
+  font-style: italic;
+  opacity: 0.65;
+}
+
+.hud-pick-effect {
+  font-size: 12px;
+  color: #ffd76e;
+}
+
 /* The Hitcher's aggro line (drei Html) */
 .hitcher-line {
   pointer-events: none;

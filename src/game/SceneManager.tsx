@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { sfx } from '../audio/sfx';
 import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
+import { useRunStore } from '../stores/runStore';
 import { useSceneStore, type SceneId } from '../stores/sceneStore';
 import { runtime } from './combat/runtime';
 import { GREYBOX_SPAWNS } from './enemies/spawns';
@@ -35,6 +36,7 @@ export function SceneManager() {
       body.setTranslation({ x, y, z }, true);
       body.setLinvel({ x: 0, y: 0, z: 0 }, true);
     }
+    useRunStore.getState().resetRun(); // a run is a run — picks don't carry over
     usePlayerStore.getState().respawnPlayer();
     useCombatStore.getState().setEnemies(SCENE_ENEMIES[scene]);
     useSceneStore.getState().setObjective(SCENE_OBJECTIVE[scene]);

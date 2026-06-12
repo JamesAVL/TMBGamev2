@@ -13,4 +13,8 @@ export const runtime = {
   player: null as CustomEcctrlRigidBody | null,
   enemyBodies: new Map<string, RapierRigidBody>(),
   swipeTargets: new Map<string, SwipeTarget>(),
+  // Pause-aware game clock (seconds). Advanced by GameClock each frame unless
+  // the sim is paused (hit-stop, level-up pick). ALL combat/AI timers compare
+  // against this, never wall-clock — so windups can't lapse during a pause.
+  time: 0,
 };

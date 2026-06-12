@@ -132,4 +132,21 @@ export const sfx = {
     tone(c, m, 'sine', 659, 659, 0.18, 0.3);
     tone(c, m, 'sine', 784, 1046, 0.4, 0.3);
   },
+  levelUp() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'square', 392, 392, 0.1, 0.2);
+    tone(c, m, 'square', 523, 523, 0.14, 0.2);
+    tone(c, m, 'square', 659, 784, 0.3, 0.25);
+  },
+  crit() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'square', 320, 110, 0.1, 0.55);
+    tone(c, m, 'sine', 1400, 700, 0.08, 0.3);
+    noise(c, m, 0.05, 0.4, 3000, 1000);
+  },
+  nova() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sawtooth', 90, 440, 0.22, 0.35);
+    noise(c, m, 0.25, 0.3, 1200, 3500);
+  },
 };

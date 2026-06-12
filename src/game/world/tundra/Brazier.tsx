@@ -3,8 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
 import { sfx } from '../../../audio/sfx';
+import { XP_BY_KIND } from '../../progression/upgrades';
 import { useCombatStore } from '../../../stores/combatStore';
 import { usePlayerStore } from '../../../stores/playerStore';
+import { useRunStore } from '../../../stores/runStore';
 import { runtime } from '../../combat/runtime';
 
 const FLARE_COOLDOWN = 8;
@@ -37,22 +39,28 @@ export function Brazier({
     runtime.swipeTargets.set(id, {
       position: () => ({ x: position[0], y: position[1], z: position[2] }),
       onHit: () => {
-        const now = performance.now() / 1000;
+        const now = runtime.time;
         if (now < readyAt.current) return; // still recovering — a dull thud
         readyAt.current = now + FLARE_COOLDOWN;
         flareUntil.current = now + 0.5;
         sfx.ember();
         const combat = useCombatStore.getState();
-        // Scald anything nearby
+        // Scald anything nearby (ember kills still feed XP and kill-heal)
         for (const [enemyId, body] of runtime.enemyBodies) {
           if (enemyId === 'blackfrost') continue;
+          const entry = combat.enemies[enemyId];
+          if (!entry?.alive) continue;
           const t = body.translation();
           const dx = t.x - position[0];
           const dz = t.z - position[2];
           if (dx * dx + dz * dz > FLARE_AOE * FLARE_AOE) continue;
-          if (combat.damageEnemy(enemyId, 1) !== 'none') {
-            const d = Math.max(0.01, Math.hypot(dx, dz));
-            body.applyImpulse({ x: (dx / d) * 2.5, y: 0.8, z: (dz / d) * 2.5 }, true);
+          const result = combat.damageEnemy(enemyId, 1);
+          if (result === 'none' || result === 'immune') continue;
+          const d = Math.max(0.01, Math.hypot(dx, dz));
+          body.applyImpulse({ x: (dx / d) * 2.5, y: 0.8, z: (dz / d) * 2.5 }, true);
+          if (result === 'dead') {
+            useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
+            if (useRunStore.getState().stats.killHeal) usePlayerStore.getState().heal(1);
           }
         }
         // Break the Black Frost's composure if he's caught in the embers
@@ -77,7 +85,7 @@ export function Brazier({
   }, [id, position, bossLink]);
 
   useFrame((state, delta) => {
-    const now = performance.now() / 1000;
+    const now = runtime.time;
     const flaring = now < flareUntil.current;
     const cooling = now < readyAt.current && !flaring;
 
