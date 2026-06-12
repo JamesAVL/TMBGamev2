@@ -5,6 +5,7 @@ import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
 import { DEBUG } from '../debug/flags';
 import { keyboardMap } from './controls';
+import { PointerLockOnClick } from './PointerLockOnClick';
 import { Player } from './player/Player';
 import { Lights } from './world/Lights';
 import { Playground } from './world/Playground';
@@ -30,6 +31,7 @@ export function GameCanvas() {
       >
         <color attach="background" args={['#1b1e2b']} />
         <fog attach="fog" args={['#1b1e2b', 35, 120]} />
+        <PointerLockOnClick />
         <Lights />
         {DEBUG && perfHud && (
           <Suspense fallback={null}>
