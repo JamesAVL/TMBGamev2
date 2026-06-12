@@ -5,9 +5,12 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
-**Asset adoptions**: the Bangers typeface (OFL) fronts the title, banners,
-and headings, and the Nabootique stands on a real hardwood floor (three.js
-example texture, MIT). Asset drop-zone folders are documented below.
+**The character pass**: Vince and Howard are now rigged, animated KayKit
+Adventurers (CC0 — the caped Rogue and the de-hatted Mage) with idle, walk,
+run, jump, and per-legend attack animations driven through ecctrl. The
+Bangers typeface (OFL) fronts the title, banners, and headings, and the
+Nabootique stands on a real hardwood floor (three.js example texture, MIT).
+Asset drop-zone folders are documented below.
 
 **The Look Pass**: toon-stepped shading with cutout outlines across the
 world and cast, procedural paper grain on surfaces, a film-collage post

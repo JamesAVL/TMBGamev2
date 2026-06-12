@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
+import { useGame } from 'ecctrl';
 import * as THREE from 'three';
 import { ensureAudio, sfx } from '../../audio/sfx';
 import { BASE_CRIT, XP_BY_KIND } from '../progression/skills';
@@ -223,6 +224,12 @@ export function PlayerCombat() {
       forward.y = 0;
       forward.normalize();
       const p = body.translation();
+
+      // One-shot attack clip on the rig (action2 = spellcast-as-spray,
+      // action1 = throw); ecctrl's useGame store routes it to the mixer.
+      const game = useGame.getState();
+      if (character === 'vince') game.action2?.();
+      else game.action1?.();
 
       if (character === 'vince') sprayAttack(p);
       else recordAttack(p);

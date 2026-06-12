@@ -56,6 +56,7 @@ export function Player() {
       // tunnel through the floor. Continuous collision detection sweeps the
       // motion path instead.
       ccd
+      animated
       mode={classic ? undefined : 'CameraBasedMovement'}
       turnSpeed={classic ? turnSpeed.classic : turnSpeed.cameraSteered}
       debug={debugTools}
