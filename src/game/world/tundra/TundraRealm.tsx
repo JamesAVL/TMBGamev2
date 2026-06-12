@@ -94,11 +94,11 @@ function EggOfMantumbi() {
     const dz = t.z + 48;
     if (dx * dx + dz * dz < 2.2) {
       sfx.treasure();
-      useHubStore.getState().earnShrapnel(25);
+      useHubStore.getState().earnEuros(25);
       useHubStore.getState().recordClear();
       const scenes = useSceneStore.getState();
       scenes.setTundra({ phase: 'cleared' });
-      scenes.setObjective('The Egg of Mantumbi is yours (+25 shrapnel). The way home is open.');
+      scenes.setObjective('The Egg of Mantumbi is yours (+25 euros). The way home is open.');
     }
   });
 

@@ -70,8 +70,9 @@ export function PlayerCombat() {
       const combat = useCombatStore.getState();
       const entry = combat.enemies[id];
       if (!entry?.alive) return { connected: false, killed: false, immune: false, crit: false };
-      const crit = Math.random() < BASE_CRIT;
-      const dealt = (crit ? dmg * 2 : dmg) * useHubStore.getState().mods.damageMult;
+      const mods = useHubStore.getState().mods;
+      const crit = Math.random() < BASE_CRIT + mods.critBonus;
+      const dealt = (crit ? dmg * 2 : dmg) * mods.damageMult;
       const result = combat.damageEnemy(id, dealt);
       if (result === 'none') return { connected: false, killed: false, immune: false, crit: false };
       const body = runtime.enemyBodies.get(id);
@@ -87,7 +88,7 @@ export function PlayerCombat() {
       }
       if (result === 'dead') {
         useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
-        useHubStore.getState().earnShrapnel(1);
+        useHubStore.getState().earnEuros(1);
       }
       return { connected: true, killed: result === 'dead', immune: false, crit };
     };
@@ -250,7 +251,7 @@ export function PlayerCombat() {
     runtime.enemyBodies.get(id)?.applyImpulse({ x: dir.x * 0.8, y: 0.2, z: dir.z * 0.8 }, true);
     if (result === 'dead') {
       useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
-      useHubStore.getState().earnShrapnel(1);
+      useHubStore.getState().earnEuros(1);
       sfx.enemyDeath();
     }
   };

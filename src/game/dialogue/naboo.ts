@@ -12,7 +12,7 @@ export const NABOO_STAGES: NabooStage[] = [
     lines: [
       'Alright. Welcome to the shop.',
       'Doors are over there. The cold one goes to the Tundra. The grey one’s for practising your little moves.',
-      'Bring back shrapnel. I accept shrapnel. Everyone accepts shrapnel if you’re calm about it.',
+      'Bring back euros. I accept euros. Everyone accepts euros if you’re calm about it.',
       'Don’t touch the tat unless you’re buying the tat.',
     ],
   },
@@ -21,7 +21,7 @@ export const NABOO_STAGES: NabooStage[] = [
     lines: [
       'You got the Egg, then. The keepers will be writing letters.',
       'The Black Frost books himself, you know. No agent. No shame.',
-      'Spend some shrapnel. The economy of this dimension depends on it. Roughly.',
+      'Spend some euros. The economy of this dimension depends on it. Roughly.',
     ],
   },
   {
