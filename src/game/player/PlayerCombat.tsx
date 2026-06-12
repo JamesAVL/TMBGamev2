@@ -265,8 +265,9 @@ export function PlayerCombat() {
     const stats = useRunStore.getState().stats;
     const character = useProfileStore.getState().character;
 
-    // buffered input: a click that landed just before the cooldown ended
-    if (queuedAttackRef.current) {
+    // buffered input (a click just before the cooldown ended) + the touch
+    // ATTACK button, which auto-fires at the weapon cooldown while held
+    if (queuedAttackRef.current || runtime.attackHeld) {
       queuedAttackRef.current = false;
       attackFnRef.current?.();
     }
