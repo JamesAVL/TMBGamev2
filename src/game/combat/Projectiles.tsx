@@ -1,13 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type * as THREE from 'three';
-import {
-  ENEMY_HIT_RADIUS,
-  POOL_SIZE,
-  PROJECTILE_SPEED,
-  projectileSlots,
-  TARGET_HIT_RADIUS,
-} from './projectilePool';
+import { ENEMY_HIT_RADIUS, POOL_SIZE, projectileSlots, TARGET_HIT_RADIUS } from './projectilePool';
 import { runtime } from './runtime';
 
 // Howard's jazz records (and any future projectile — the Moon will want
@@ -32,19 +26,20 @@ export function Projectiles() {
         continue;
       }
 
-      const step = PROJECTILE_SPEED * dt;
+      const step = slot.speed * dt;
       slot.x += slot.dx * step;
       slot.z += slot.dz * step;
       slot.traveled += step;
 
-      // collide with enemies
+      // collide with enemies (piercing discs strike each enemy once)
       for (const [id, body] of runtime.enemyBodies) {
-        if (!body.isEnabled()) continue;
+        if (!body.isEnabled() || slot.hitIds.has(id)) continue;
         const t = body.translation();
         const ddx = t.x - slot.x;
         const ddz = t.z - slot.z;
         if (Math.abs(t.y - slot.y) > 1.4) continue;
         if (ddx * ddx + ddz * ddz > ENEMY_HIT_RADIUS * ENEMY_HIT_RADIUS) continue;
+        slot.hitIds.add(id);
         if (slot.onEnemyHit(id, { x: slot.dx, z: slot.dz })) {
           slot.active = false;
           break;
@@ -74,6 +69,11 @@ export function Projectiles() {
       group.visible = true;
       group.position.set(slot.x, slot.y, slot.z);
       group.rotation.y = now * 14; // spin, baby
+      group.scale.setScalar(slot.rare ? 1.35 : 1);
+      const labels = group.children[1] as THREE.Mesh | undefined;
+      const goldLabel = group.children[2] as THREE.Mesh | undefined;
+      if (labels) labels.visible = !slot.rare;
+      if (goldLabel) goldLabel.visible = slot.rare;
     }
   });
 
@@ -95,6 +95,11 @@ export function Projectiles() {
           <mesh position={[0, 0.026, 0]}>
             <cylinderGeometry args={[0.11, 0.11, 0.002, 14]} />
             <meshStandardMaterial color="#d8543f" emissive="#d8543f" emissiveIntensity={0.4} />
+          </mesh>
+          {/* the rare pressing's gold label */}
+          <mesh position={[0, 0.026, 0]} visible={false}>
+            <cylinderGeometry args={[0.13, 0.13, 0.002, 14]} />
+            <meshStandardMaterial color="#e8c050" emissive="#ffae34" emissiveIntensity={1.6} />
           </mesh>
         </group>
       ))}

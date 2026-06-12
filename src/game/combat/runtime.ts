@@ -11,6 +11,7 @@ export type SwipeTarget = {
 // not reactive game state.
 export const runtime = {
   player: null as CustomEcctrlRigidBody | null,
+  companion: null as RapierRigidBody | null,
   enemyBodies: new Map<string, RapierRigidBody>(),
   swipeTargets: new Map<string, SwipeTarget>(),
   // Pause-aware game clock (seconds). Advanced by GameClock each frame unless

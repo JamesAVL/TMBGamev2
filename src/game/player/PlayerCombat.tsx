@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ensureAudio, sfx } from '../../audio/sfx';
 import { XP_BY_KIND } from '../progression/skills';
@@ -13,23 +13,33 @@ import { runtime } from '../combat/runtime';
 import { movementConfig } from './movementConfig';
 
 const SPRAY_COOLDOWN = 0.45; // × stats.cooldownMult
-const SPRAY_RANGE = 2.4; // × stats.rangeMult
-const SPRAY_HALF_ANGLE_COS = Math.cos((55 * Math.PI) / 180);
+const SPRAY_RANGE = 2.4; // × stats.rangeMult, × (1 + Wide Nozzle)
+const SPRAY_BASE_HALF_ANGLE = 55; // degrees, + Wide Nozzle
 const SPRAY_LIFETIME = 0.16;
 const RECORD_COOLDOWN = 0.6; // × stats.cooldownMult
-const RECORD_RANGE = 12; // × stats.rangeMult
+const RECORD_RANGE = 12; // × stats.rangeMult, × (1 + Strong Arm)
+const RECORD_SPEED = 16; // × Strong Arm
+const MIST_RADIUS = 1.7; // Extra Hold's lingering glitter
+const MIST_TICK = 0.45;
+const MIST_DAMAGE_FACTOR = 0.35;
+const MAX_MISTS = 4;
 const VOID_Y = -10; // below the slab: teleport home instead of falling forever
 const RESPAWN_DELAY = 1.4;
+
+type Mist = { id: number; x: number; z: number; until: number; nextTick: number };
 
 // Mounted inside <Ecctrl>, so the spray cone inherits the body transform
 // (which faces the camera heading under CameraBasedMovement).
 export function PlayerCombat() {
   const camera = useThree((state) => state.camera);
+  const scene = useThree((state) => state.scene);
   const sprayRef = useRef<THREE.Mesh>(null);
   const sprayMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const lastAttackRef = useRef(-Infinity);
   const lastRegenRef = useRef(0);
   const deadAtRef = useRef(0);
+  const [mists, setMists] = useState<Mist[]>([]);
+  const mistSeq = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
 
@@ -55,22 +65,25 @@ export function PlayerCombat() {
     };
 
     // Vince: a tight cone of weaponised glamour
-    const sprayAttack = (p: { x: number; y: number; z: number }, range: number, dmg: number) => {
+    const sprayAttack = (p: { x: number; y: number; z: number }) => {
+      const stats = useRunStore.getState().stats;
+      const range = SPRAY_RANGE * stats.rangeMult * (1 + stats.sprayRangeBonus);
+      const halfAngleCos = Math.cos(
+        ((SPRAY_BASE_HALF_ANGLE + stats.sprayArcBonusDeg) * Math.PI) / 180,
+      );
       sfx.spray();
       useCombatStore.getState().registerAttack();
       let connected = false;
       let killed = false;
       let immune = false;
       let anyCrit = false;
-      for (const [id] of runtime.enemyBodies) {
-        const body = runtime.enemyBodies.get(id);
-        if (!body) continue;
+      for (const [id, body] of runtime.enemyBodies) {
         const t = body.translation();
         toEnemy.set(t.x - p.x, 0, t.z - p.z);
         if (toEnemy.length() > range) continue;
         toEnemy.normalize();
-        if (toEnemy.dot(forward) < SPRAY_HALF_ANGLE_COS) continue;
-        const r = strike(id, dmg, 3, toEnemy);
+        if (toEnemy.dot(forward) < halfAngleCos) continue;
+        const r = strike(id, stats.damage, 3, toEnemy);
         connected ||= r.connected;
         killed ||= r.killed;
         immune ||= r.immune;
@@ -81,7 +94,7 @@ export function PlayerCombat() {
         toEnemy.set(t.x - p.x, 0, t.z - p.z);
         if (toEnemy.length() > range) continue;
         toEnemy.normalize();
-        if (toEnemy.dot(forward) < SPRAY_HALF_ANGLE_COS) continue;
+        if (toEnemy.dot(forward) < halfAngleCos) continue;
         target.onHit();
         connected = true;
       }
@@ -93,10 +106,27 @@ export function PlayerCombat() {
         sfx.clink(); // bounced off — he's unbothered
       }
       if (killed) sfx.enemyDeath();
+
+      // Extra Hold: the mist remembers
+      if (stats.sprayLingerSeconds > 0) {
+        const now = runtime.time;
+        const mist: Mist = {
+          id: mistSeq.current++,
+          x: p.x + forward.x * 1.5,
+          z: p.z + forward.z * 1.5,
+          until: now + stats.sprayLingerSeconds,
+          nextTick: now + MIST_TICK,
+        };
+        setMists((zs) => [...zs.slice(-(MAX_MISTS - 1)), mist]);
+      }
     };
 
     // Howard: a 12-inch of pure jazz, thrown flat and spinning
-    const recordAttack = (p: { x: number; y: number; z: number }, range: number, dmg: number) => {
+    const recordAttack = (p: { x: number; y: number; z: number }) => {
+      const stats = useRunStore.getState().stats;
+      const rare = Math.random() < stats.rareChance;
+      const dmg = stats.damage * (rare ? 2 : 1);
+      const knockback = 3 + stats.throwKnockbackBonus + (rare ? 1 : 0);
       sfx.throwWhoosh();
       throwRecord({
         x: p.x + forward.x * 0.5,
@@ -104,15 +134,17 @@ export function PlayerCombat() {
         z: p.z + forward.z * 0.5,
         dx: forward.x,
         dz: forward.z,
-        range,
+        speed: RECORD_SPEED * stats.throwSpeedMult,
+        range: RECORD_RANGE * stats.rangeMult * (1 + stats.throwRangeBonus),
+        rare,
         onEnemyHit: (id, dir) => {
-          const r = strike(id, dmg, 3, dir);
+          const r = strike(id, dmg, knockback, dir);
           if (r.connected) {
             if (r.crit) sfx.crit();
             else sfx.thunk();
             useCombatStore.getState().triggerHitStop(r.crit ? 110 : 60);
             if (r.killed) sfx.enemyDeath();
-            return true;
+            return !rare; // a rare pressing carves straight through
           }
           if (r.immune) {
             sfx.clink();
@@ -131,10 +163,9 @@ export function PlayerCombat() {
       const now = runtime.time;
       const run = useRunStore.getState();
       if (run.panelOpen) return; // mid skill-spend
-      const stats = run.stats;
       const character = useProfileStore.getState().character;
       const cooldown =
-        (character === 'vince' ? SPRAY_COOLDOWN : RECORD_COOLDOWN) * stats.cooldownMult;
+        (character === 'vince' ? SPRAY_COOLDOWN : RECORD_COOLDOWN) * run.stats.cooldownMult;
       if (now - lastAttackRef.current < cooldown) return;
       if (usePlayerStore.getState().dead) return;
       const body = runtime.player?.group;
@@ -147,11 +178,8 @@ export function PlayerCombat() {
       forward.normalize();
       const p = body.translation();
 
-      if (character === 'vince') {
-        sprayAttack(p, SPRAY_RANGE * stats.rangeMult, stats.damage);
-      } else {
-        recordAttack(p, RECORD_RANGE * stats.rangeMult, stats.damage);
-      }
+      if (character === 'vince') sprayAttack(p);
+      else recordAttack(p);
     };
 
     const onMouseDown = (e: MouseEvent) => {
@@ -169,6 +197,20 @@ export function PlayerCombat() {
     };
   }, [camera, forward, toEnemy]);
 
+  // Damage one enemy from a mist tick (no sounds per tick — too spammy)
+  const mistStrike = (id: string, dmg: number, dir: THREE.Vector3) => {
+    const combat = useCombatStore.getState();
+    const entry = combat.enemies[id];
+    if (!entry?.alive) return;
+    const result = combat.damageEnemy(id, dmg);
+    if (result === 'none' || result === 'immune') return;
+    runtime.enemyBodies.get(id)?.applyImpulse({ x: dir.x * 0.8, y: 0.2, z: dir.z * 0.8 }, true);
+    if (result === 'dead') {
+      useRunStore.getState().addXp(XP_BY_KIND[entry.kind]);
+      sfx.enemyDeath();
+    }
+  };
+
   useFrame(() => {
     const now = runtime.time;
     const stats = useRunStore.getState().stats;
@@ -181,9 +223,34 @@ export function PlayerCombat() {
       sprayRef.current.visible = active;
       if (active) {
         const k = t / SPRAY_LIFETIME;
-        sprayRef.current.scale.set(0.6 + k * 0.7, 0.6 + k * 0.7, stats.rangeMult);
+        const flare = 1 + stats.sprayArcBonusDeg / 55;
+        sprayRef.current.scale.set(
+          (0.6 + k * 0.7) * flare,
+          (0.6 + k * 0.7) * flare,
+          stats.rangeMult * (1 + stats.sprayRangeBonus),
+        );
         sprayMatRef.current.opacity = 0.7 * (1 - k);
       }
+    }
+
+    // Extra Hold mists: tick damage on the game clock, expire quietly
+    if (mists.length > 0) {
+      let anyExpired = false;
+      for (const mist of mists) {
+        while (now >= mist.nextTick && now < mist.until) {
+          mist.nextTick += MIST_TICK;
+          for (const [id, body] of runtime.enemyBodies) {
+            if (!body.isEnabled()) continue;
+            const t = body.translation();
+            toEnemy.set(t.x - mist.x, 0, t.z - mist.z);
+            if (toEnemy.length() > MIST_RADIUS) continue;
+            toEnemy.normalize();
+            mistStrike(id, stats.damage * MIST_DAMAGE_FACTOR, toEnemy);
+          }
+        }
+        if (now >= mist.until) anyExpired = true;
+      }
+      if (anyExpired) setMists((zs) => zs.filter((m) => now < m.until));
     }
 
     // Polo Discipline: mint-fresh recovery
@@ -225,19 +292,45 @@ export function PlayerCombat() {
     }
   });
 
-  // Spray cone: apex at the can, base flaring forward (+Z)
   return (
-    <mesh ref={sprayRef} visible={false} position={[0, 0.25, 1.3]} rotation={[-Math.PI / 2, 0, 0]}>
-      <coneGeometry args={[0.65, 2.2, 12, 1, true]} />
-      <meshStandardMaterial
-        ref={sprayMatRef}
-        color="#cfe0ff"
-        emissive="#e8d4ff"
-        emissiveIntensity={2}
-        transparent
-        depthWrite={false}
-        side={THREE.DoubleSide}
-      />
-    </mesh>
+    <>
+      {/* Spray cone: apex at the can, base flaring forward (+Z) */}
+      <mesh
+        ref={sprayRef}
+        visible={false}
+        position={[0, 0.25, 1.3]}
+        rotation={[-Math.PI / 2, 0, 0]}
+      >
+        <coneGeometry args={[0.65, 2.2, 12, 1, true]} />
+        <meshStandardMaterial
+          ref={sprayMatRef}
+          color="#cfe0ff"
+          emissive="#e8d4ff"
+          emissiveIntensity={2}
+          transparent
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Extra Hold mists live in world space, not on the moving body */}
+      {createPortal(
+        <>
+          {mists.map((mist) => (
+            <mesh key={mist.id} position={[mist.x, 0.06, mist.z]} rotation={[-Math.PI / 2, 0, 0]}>
+              <circleGeometry args={[MIST_RADIUS, 24]} />
+              <meshStandardMaterial
+                color="#e8d4ff"
+                emissive="#cc88ff"
+                emissiveIntensity={0.8}
+                transparent
+                opacity={0.3}
+                depthWrite={false}
+              />
+            </mesh>
+          ))}
+        </>,
+        scene,
+      )}
+    </>
   );
 }

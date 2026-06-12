@@ -473,25 +473,41 @@ body,
   border-color: #ffd76e;
 }
 
-/* Character pads */
-.pad-label {
-  pointer-events: none;
-  user-select: none;
-  white-space: nowrap;
-  font-size: 12px;
-  letter-spacing: 0.2em;
-  color: #f4f1e8;
-  background: rgba(11, 13, 20, 0.7);
-  border: 1px solid rgba(244, 241, 232, 0.25);
-  border-radius: 8px;
-  padding: 4px 10px;
-  opacity: 0.75;
+/* Skill group headers */
+.hud-skill-group {
+  margin: 10px 4px 5px;
+  font-size: 11px;
+  letter-spacing: 0.26em;
+  opacity: 0.6;
 }
 
-.pad-label.active {
-  color: #ffd76e;
-  border-color: rgba(255, 215, 110, 0.6);
-  opacity: 1;
+/* Duo banter / system bubble */
+.hud-bubble {
+  position: absolute;
+  bottom: 86px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(560px, 86vw);
+  font-size: 13px;
+  font-style: italic;
+  text-align: center;
+  color: #f4f1e8;
+  background: rgba(11, 13, 20, 0.78);
+  border: 1px solid rgba(244, 241, 232, 0.22);
+  border-radius: 12px;
+  padding: 8px 16px;
+  animation: bubble-in 0.18s ease-out;
+}
+
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 /* The Hitcher's aggro line (drei Html) */

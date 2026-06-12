@@ -1,6 +1,9 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CLASSIC_CONTROLS } from '../debug/flags';
-import { SKILLS } from '../game/progression/skills';
+import { sfx } from '../audio/sfx';
+import { BOSS_LOCK_LINE, SWITCH_LINES, TUNDRA_ENTRY_EXCHANGES } from '../game/dialogue/banter';
+import { SKILLS, type SkillOwner } from '../game/progression/skills';
+import { runtime } from '../game/combat/runtime';
 import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { useProfileStore } from '../stores/profileStore';
@@ -13,6 +16,8 @@ function relockPointer() {
   const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
   canvas?.requestPointerLock();
 }
+
+const pick = <T,>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
 function XpBar() {
   const xp = useRunStore((s) => s.xp);
@@ -33,6 +38,12 @@ function XpBar() {
     </div>
   );
 }
+
+const SKILL_GROUPS: { owner: SkillOwner; title: string }[] = [
+  { owner: 'shared', title: 'SHARED' },
+  { owner: 'vince', title: 'VINCE — THE CAN' },
+  { owner: 'howard', title: 'HOWARD — THE COLLECTION' },
+];
 
 function SkillsPanel() {
   const open = useRunStore((s) => s.panelOpen);
@@ -60,35 +71,40 @@ function SkillsPanel() {
           : 'no points to spend — go and earn some'}
       </p>
       <div className="hud-skills-list">
-        {SKILLS.map((def) => {
-          const n = points[def.id] ?? 0;
-          const maxed = n >= def.maxPoints;
-          const canSpend = unspent > 0 && !maxed;
-          return (
-            <div key={def.id} className="hud-skill-row">
-              <div className="hud-skill-info">
-                <span className="hud-skill-name">{def.name}</span>
-                <span className="hud-skill-blurb">{def.blurb}</span>
-                <span className="hud-skill-value">
-                  {def.valueLabel(n)}
-                  {!maxed && <span className="hud-skill-next"> → {def.valueLabel(n + 1)}</span>}
-                </span>
-              </div>
-              <div className="hud-skill-pips">
-                {Array.from({ length: def.maxPoints }, (_, i) => (
-                  <span key={i} className={i < n ? 'hud-skill-pip filled' : 'hud-skill-pip'} />
-                ))}
-              </div>
-              <button
-                className="hud-skill-spend"
-                disabled={!canSpend}
-                onClick={() => useRunStore.getState().spendPoint(def.id)}
-              >
-                +
-              </button>
-            </div>
-          );
-        })}
+        {SKILL_GROUPS.map((group) => (
+          <div key={group.owner}>
+            <div className="hud-skill-group">{group.title}</div>
+            {SKILLS.filter((d) => d.owner === group.owner).map((def) => {
+              const n = points[def.id] ?? 0;
+              const maxed = n >= def.maxPoints;
+              const canSpend = unspent > 0 && !maxed;
+              return (
+                <div key={def.id} className="hud-skill-row">
+                  <div className="hud-skill-info">
+                    <span className="hud-skill-name">{def.name}</span>
+                    <span className="hud-skill-blurb">{def.blurb}</span>
+                    <span className="hud-skill-value">
+                      {def.valueLabel(n)}
+                      {!maxed && <span className="hud-skill-next"> → {def.valueLabel(n + 1)}</span>}
+                    </span>
+                  </div>
+                  <div className="hud-skill-pips">
+                    {Array.from({ length: def.maxPoints }, (_, i) => (
+                      <span key={i} className={i < n ? 'hud-skill-pip filled' : 'hud-skill-pip'} />
+                    ))}
+                  </div>
+                  <button
+                    className="hud-skill-spend"
+                    disabled={!canSpend}
+                    onClick={() => useRunStore.getState().spendPoint(def.id)}
+                  >
+                    +
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </div>
       <button className="hud-skills-close" onClick={close}>
         done — back to it (T)
@@ -124,20 +140,66 @@ export function Hud() {
   const phase = useSceneStore((s) => s.tundra.phase);
   const character = useProfileStore((s) => s.character);
 
-  // T toggles the skills panel (keydown counts as a user activation, so the
-  // close path can re-capture the pointer).
+  const [bubble, setBubble] = useState<{ id: number; text: string } | null>(null);
+  const bubbleSeq = useRef(0);
+  const bubbleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showBubble = useCallback((text: string, holdMs = 2600) => {
+    if (bubbleTimer.current) clearTimeout(bubbleTimer.current);
+    setBubble({ id: bubbleSeq.current++, text });
+    bubbleTimer.current = setTimeout(() => setBubble(null), holdMs);
+  }, []);
+
+  // T toggles the skills panel; Q swaps legends (keydown is a user
+  // activation, so both paths may re-capture the pointer).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== 'KeyT' || e.repeat) return;
-      const run = useRunStore.getState();
-      const opening = !run.panelOpen;
-      run.setPanelOpen(opening);
-      if (opening) document.exitPointerLock();
-      else relockPointer();
+      if (e.repeat) return;
+      if (e.code === 'KeyT') {
+        const run = useRunStore.getState();
+        const opening = !run.panelOpen;
+        run.setPanelOpen(opening);
+        if (opening) document.exitPointerLock();
+        else relockPointer();
+        return;
+      }
+      if (e.code === 'KeyQ') {
+        const run = useRunStore.getState();
+        if (run.panelOpen || usePlayerStore.getState().dead) return;
+        const boss = useCombatStore.getState().enemies['blackfrost'];
+        if (boss?.alive && boss.aggro) {
+          showBubble(BOSS_LOCK_LINE);
+          return;
+        }
+        const player = runtime.player?.group;
+        const companion = runtime.companion;
+        if (!player || !companion) return;
+        const pp = player.translation();
+        const cp = companion.translation();
+        player.setTranslation({ x: cp.x, y: cp.y + 0.2, z: cp.z }, true);
+        player.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        companion.setTranslation({ x: pp.x, y: pp.y, z: pp.z }, true);
+        companion.setLinvel({ x: 0, y: 0, z: 0 }, true);
+        useProfileStore.getState().switchCharacter();
+        sfx.spend();
+        const incoming = useProfileStore.getState().character;
+        const line = pick(SWITCH_LINES[incoming]);
+        if (line) showBubble(line);
+      }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [showBubble]);
+
+  // Realm-entry exchange: one line, then the reply
+  useEffect(() => {
+    if (scene !== 'tundra') return;
+    const exchange = pick(TUNDRA_ENTRY_EXCHANGES);
+    if (!exchange) return;
+    showBubble(exchange[0], 2300);
+    const t = setTimeout(() => showBubble(exchange[1]), 2500);
+    return () => clearTimeout(t);
+  }, [scene, showBubble]);
 
   return (
     <div className="hud">
@@ -156,6 +218,11 @@ export function Hud() {
       <BossBar />
       <XpBar />
       <SkillsPanel />
+      {bubble && (
+        <div key={bubble.id} className="hud-bubble">
+          {bubble.text}
+        </div>
+      )}
       <div className="hud-hp" aria-label={`health ${hp} of ${maxHp}`}>
         {Array.from({ length: maxHp }, (_, i) => (
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />
@@ -189,8 +256,8 @@ export function Hud() {
               {character === 'vince' ? 'spray' : 'throw'}
             </div>
             <div>
-              drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>T</kbd> —
-              skills
+              drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>Q</kbd> —
+              switch &nbsp;·&nbsp; <kbd>T</kbd> — skills
             </div>
           </>
         ) : (
@@ -203,7 +270,8 @@ export function Hud() {
             </div>
             <div>
               <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
-              <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
+              <kbd>Q</kbd> — switch legend &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp;{' '}
+              <kbd>Esc</kbd> — release mouse
             </div>
           </>
         )}
