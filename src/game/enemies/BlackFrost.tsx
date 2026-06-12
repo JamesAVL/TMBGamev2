@@ -1,3 +1,5 @@
+import { ToonOutline } from '../look/ToonOutline';
+import { getGradientMap } from '../look/toon';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CapsuleCollider, RigidBody, type RapierRigidBody } from '@react-three/rapier';
@@ -55,7 +57,8 @@ function FreezeZoneMesh({ zone }: { zone: FreezeZone }) {
   const emissive = zone.snapped ? 2.5 : 1.2;
   const color = zone.snapped ? '#dff4ff' : '#1a9bff';
   const mat = (
-    <meshStandardMaterial
+    <meshToonMaterial
+      gradientMap={getGradientMap()}
       color={color}
       emissive={color}
       emissiveIntensity={emissive}
@@ -101,10 +104,10 @@ function FreezeZoneMesh({ zone }: { zone: FreezeZone }) {
 export function BlackFrost() {
   const bodyRef = useRef<RapierRigidBody>(null);
   const groupRef = useRef<THREE.Group>(null);
-  const bodyMatRef = useRef<THREE.MeshStandardMaterial>(null);
-  const jockMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const bodyMatRef = useRef<THREE.MeshToonMaterial>(null);
+  const jockMatRef = useRef<THREE.MeshToonMaterial>(null);
   const beamWarnRef = useRef<THREE.Mesh>(null);
-  const beamWarnMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const beamWarnMatRef = useRef<THREE.MeshToonMaterial>(null);
   const beamRef = useRef<THREE.Mesh>(null);
 
   const [zones, setZones] = useState<FreezeZone[]>([]);
@@ -379,7 +382,7 @@ export function BlackFrost() {
         rotation={[Math.cos(a) * tilt, 0, -Math.sin(a) * tilt]}
       >
         <coneGeometry args={[0.055, 0.5, 5]} />
-        <meshStandardMaterial color="#0c0c10" roughness={0.9} />
+        <meshToonMaterial gradientMap={getGradientMap()} color="#0c0c10" />
       </mesh>
     );
   };
@@ -398,12 +401,13 @@ export function BlackFrost() {
           {/* Charcoal punk body */}
           <mesh castShadow position={[0, 0.1, 0]}>
             <capsuleGeometry args={[0.38, 1.2, 6, 14]} />
-            <meshStandardMaterial ref={bodyMatRef} color="#26262c" roughness={0.85} />
+            <meshStandardMaterial ref={bodyMatRef} color="#26262c" />
+            <ToonOutline />
           </mesh>
           {/* Grey scowling face */}
           <mesh castShadow position={[0, 0.98, 0.08]}>
             <sphereGeometry args={[0.3, 14, 12]} />
-            <meshStandardMaterial color="#4e4e58" roughness={0.8} />
+            <meshToonMaterial gradientMap={getGradientMap()} color="#4e4e58" />
           </mesh>
           <mesh position={[-0.1, 1.04, 0.32]}>
             <sphereGeometry args={[0.045, 8, 8]} />
@@ -416,56 +420,56 @@ export function BlackFrost() {
           {/* Gritted teeth */}
           <mesh position={[0, 0.88, 0.33]}>
             <boxGeometry args={[0.16, 0.05, 0.03]} />
-            <meshStandardMaterial color="#d8d4c8" />
+            <meshToonMaterial gradientMap={getGradientMap()} color="#d8d4c8" />
           </mesh>
           {/* The hair: a crown of black spikes */}
           {Array.from({ length: 9 }, (_, i) => spike(i, 9))}
           <mesh castShadow position={[0, 1.45, 0]}>
             <coneGeometry args={[0.06, 0.55, 5]} />
-            <meshStandardMaterial color="#0c0c10" roughness={0.9} />
+            <meshToonMaterial gradientMap={getGradientMap()} color="#0c0c10" />
           </mesh>
           {/* Jagged claw hands */}
           {[-1, 1].map((side) => (
             <group key={side} position={[side * 0.52, -0.15, 0.08]} rotation={[0, 0, side * 0.5]}>
               <mesh castShadow>
                 <coneGeometry args={[0.11, 0.34, 5]} />
-                <meshStandardMaterial color="#0c0c10" roughness={0.95} />
+                <meshToonMaterial gradientMap={getGradientMap()} color="#0c0c10" />
               </mesh>
               <mesh castShadow position={[side * 0.08, -0.08, 0.06]} rotation={[0.5, 0, 0]}>
                 <coneGeometry args={[0.07, 0.26, 5]} />
-                <meshStandardMaterial color="#0c0c10" roughness={0.95} />
+                <meshToonMaterial gradientMap={getGradientMap()} color="#0c0c10" />
               </mesh>
             </group>
           ))}
           {/* THE jockstrap — red, emblazoned, and the source of the beam */}
           <mesh castShadow position={[0, -0.52, 0.2]}>
             <boxGeometry args={[0.36, 0.3, 0.2]} />
-            <meshStandardMaterial
+            <meshToonMaterial
+              gradientMap={getGradientMap()}
               ref={jockMatRef}
               color="#c4332f"
               emissive="#7fd4ff"
               emissiveIntensity={0.4}
-              roughness={0.6}
             />
           </mesh>
           <mesh position={[0, -0.52, 0.31]}>
             <boxGeometry args={[0.12, 0.14, 0.01]} />
-            <meshStandardMaterial color="#f4f1e8" />
+            <meshToonMaterial gradientMap={getGradientMap()} color="#f4f1e8" />
           </mesh>
           {/* Red cowboy boots, white trim */}
           {[-1, 1].map((side) => (
             <group key={side} position={[side * 0.2, -1.12, 0.04]}>
               <mesh castShadow>
                 <boxGeometry args={[0.2, 0.34, 0.22]} />
-                <meshStandardMaterial color="#c4332f" roughness={0.5} />
+                <meshToonMaterial gradientMap={getGradientMap()} color="#c4332f" />
               </mesh>
               <mesh castShadow position={[0, -0.12, 0.14]}>
                 <boxGeometry args={[0.18, 0.12, 0.18]} />
-                <meshStandardMaterial color="#c4332f" roughness={0.5} />
+                <meshToonMaterial gradientMap={getGradientMap()} color="#c4332f" />
               </mesh>
               <mesh position={[0, 0.05, 0.115]}>
                 <boxGeometry args={[0.05, 0.2, 0.01]} />
-                <meshStandardMaterial color="#f4f1e8" />
+                <meshToonMaterial gradientMap={getGradientMap()} color="#f4f1e8" />
               </mesh>
             </group>
           ))}
@@ -473,7 +477,8 @@ export function BlackFrost() {
           {invulnerable && alive && (
             <mesh>
               <sphereGeometry args={[1.5, 20, 16]} />
-              <meshStandardMaterial
+              <meshToonMaterial
+                gradientMap={getGradientMap()}
                 color="#88d4ff"
                 emissive="#88d4ff"
                 emissiveIntensity={0.4}
@@ -490,7 +495,8 @@ export function BlackFrost() {
       {/* Beam warning line + the beam itself (world space) */}
       <mesh ref={beamWarnRef} visible={false}>
         <boxGeometry args={[0.14, 0.02, BEAM_LENGTH]} />
-        <meshStandardMaterial
+        <meshToonMaterial
+          gradientMap={getGradientMap()}
           ref={beamWarnMatRef}
           color="#1a9bff"
           emissive="#1a9bff"
@@ -502,7 +508,8 @@ export function BlackFrost() {
       </mesh>
       <mesh ref={beamRef} visible={false}>
         <boxGeometry args={[BEAM_HALF_WIDTH * 2, 0.7, BEAM_LENGTH]} />
-        <meshStandardMaterial
+        <meshToonMaterial
+          gradientMap={getGradientMap()}
           color="#dff4ff"
           emissive="#9fd4ff"
           emissiveIntensity={3}

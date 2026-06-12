@@ -1,10 +1,10 @@
 export function Lights() {
   return (
     <>
-      <hemisphereLight args={['#bdd2ff', '#3f3a33', 0.35]} />
+      <hemisphereLight args={['#bdd2ff', '#3f3a33', 0.28]} />
       <directionalLight
         position={[18, 24, 12]}
-        intensity={1.6}
+        intensity={2.0}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-bias={-0.0003}

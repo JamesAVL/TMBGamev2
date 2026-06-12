@@ -1,3 +1,5 @@
+import { ToonOutline } from '../../look/ToonOutline';
+import { getGradientMap } from '../../look/toon';
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { CylinderCollider, RigidBody } from '@react-three/rapier';
@@ -28,7 +30,7 @@ export function Brazier({
   bossLink?: boolean;
 }) {
   const lightRef = useRef<THREE.PointLight>(null);
-  const coalsRef = useRef<THREE.MeshStandardMaterial>(null);
+  const coalsRef = useRef<THREE.MeshToonMaterial>(null);
   const readyAt = useRef(0);
   const flareUntil = useRef(0);
   const healAcc = useRef(0);
@@ -122,12 +124,14 @@ export function Brazier({
         <CylinderCollider args={[0.35, 0.55]} position={[0, 0.35, 0]} />
         <mesh castShadow receiveShadow position={[0, 0.3, 0]}>
           <cylinderGeometry args={[0.55, 0.42, 0.6, 12]} />
-          <meshStandardMaterial color="#564e44" />
+          <meshToonMaterial gradientMap={getGradientMap()} color="#564e44" />
+          <ToonOutline />
         </mesh>
       </RigidBody>
       <mesh position={[0, 0.62, 0]}>
         <sphereGeometry args={[0.38, 12, 8]} />
-        <meshStandardMaterial
+        <meshToonMaterial
+          gradientMap={getGradientMap()}
           ref={coalsRef}
           color="#3a2218"
           emissive="#ff7a30"

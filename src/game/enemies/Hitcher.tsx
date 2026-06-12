@@ -18,7 +18,7 @@ const TUNING: MeleeTuning = {
 };
 
 export function Hitcher({ id }: { id: string }) {
-  const eyeMaterialRef = useRef<THREE.MeshStandardMaterial>(null);
+  const eyeMaterialRef = useRef<THREE.MeshToonMaterial>(null);
   return (
     <MeleeEnemy id={id} tuning={TUNING} eyeMaterialRef={eyeMaterialRef}>
       <HitcherModel eyeMaterialRef={eyeMaterialRef} />

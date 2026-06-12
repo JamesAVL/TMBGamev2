@@ -5,6 +5,11 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
+**The Look Pass**: toon-stepped shading with cutout outlines across the
+world and cast, procedural paper grain on surfaces, a film-collage post
+grade (grain, vignette, saturation), and real CC0 props — KayKit Dungeon
+Remastered (see CREDITS.md) dresses the shop, range, and Tundra.
+
 **Step 5 — THE NABOOTIQUE**: the game now starts in the shop. Naboo holds
 the counter (right-click to talk — his storyline advances as you clear
 realms) and sells permanent trinkets for **euros** (+1 per kill, +25 per

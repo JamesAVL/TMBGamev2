@@ -1,3 +1,4 @@
+import { getGradientMap } from '../../look/toon';
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sparkles } from '@react-three/drei';
@@ -13,6 +14,7 @@ import { runtime } from '../../combat/runtime';
 import { BlackFrost } from '../../enemies/BlackFrost';
 import { Block } from '../Block';
 import { Portal } from '../Portal';
+import { KayProp } from '../props/KayProp';
 import { Brazier } from './Brazier';
 import { BLACK_FROST, TUNDRA_WAVES } from './tundraSpawns';
 
@@ -112,11 +114,11 @@ function EggOfMantumbi() {
       <group ref={eggRef}>
         <mesh castShadow scale={[1, 1.35, 1]}>
           <sphereGeometry args={[0.42, 18, 14]} />
-          <meshStandardMaterial
+          <meshToonMaterial
+            gradientMap={getGradientMap()}
             color="#e8c050"
             emissive="#ffae34"
             emissiveIntensity={phase === 'egg' ? 1.6 : 0.4}
-            roughness={0.3}
           />
         </mesh>
       </group>
@@ -200,10 +202,10 @@ export function TundraRealm() {
       {/* Atmosphere */}
       <color attach="background" args={['#0d1422']} />
       <fog attach="fog" args={['#0d1422', 14, 70]} />
-      <hemisphereLight args={['#a8c8e8', '#1c2433', 0.5]} />
+      <hemisphereLight args={['#a8c8e8', '#1c2433', 0.4]} />
       <directionalLight
         position={[20, 30, 10]}
-        intensity={0.9}
+        intensity={1.15}
         color="#cfe4ff"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -235,6 +237,18 @@ export function TundraRealm() {
       <Block size={[48, 12, 3]} position={[0, 6, -56]} color="#9fc4dd" />
       <Block size={[48, 12, 3]} position={[0, 6, 42]} color="#9fc4dd" />
 
+      {/* Scattered ruin (KayKit, CC0) */}
+      <KayProp
+        name="rubble_large"
+        position={[-9, 0, 24]}
+        rotation={[0, 0.8, 0]}
+        scale={1.6}
+        physical
+      />
+      <KayProp name="rubble_half" position={[10.5, 0, -16.5]} rotation={[0, 2.1, 0]} scale={1.5} />
+      <KayProp name="rubble_half" position={[-10, 0, -21]} rotation={[0, -0.6, 0]} scale={1.4} />
+      <KayProp name="column" position={[5.5, 0, -10]} rotation={[0, 0.3, 0]} scale={1.8} physical />
+
       {/* Room 1 dressing */}
       <Block size={[3, 7, 3]} position={[-12, 3.5, 20]} color="#b4d4e8" />
       <Block size={[3, 9, 3]} position={[13, 4.5, 14]} color="#b4d4e8" />
@@ -250,8 +264,8 @@ export function TundraRealm() {
       {gateUp && <Block size={[10, 6, 1.5]} position={[0, 3, -28]} color="#bfe4f5" />}
 
       {/* Boss stage dressing */}
-      <Block size={[3, 8, 3]} position={[-15, 4, -44]} color="#b4d4e8" />
-      <Block size={[3, 8, 3]} position={[15, 4, -44]} color="#b4d4e8" />
+      <KayProp name="pillar_decorated" position={[-15, 0, -44]} scale={2.2} physical />
+      <KayProp name="pillar_decorated" position={[15, 0, -44]} scale={2.2} physical />
 
       {/* Ice sheets (visual; the slide force lives in TundraForces) */}
       {ICE_ZONES.map((zone, i) => (
