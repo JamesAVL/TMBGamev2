@@ -1,0 +1,5 @@
+dist
+node_modules
+package-lock.json
+# the game brief is hand-authored — leave its formatting alone
+claude.md

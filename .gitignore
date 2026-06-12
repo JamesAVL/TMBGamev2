@@ -1,0 +1,21 @@
+# dependencies / build
+node_modules/
+dist/
+*.tsbuildinfo
+.eslintcache
+
+# env / local
+*.local
+.env
+.env.*
+
+# logs
+logs
+*.log
+npm-debug.log*
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json

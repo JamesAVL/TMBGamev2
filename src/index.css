@@ -1,0 +1,98 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #15171f;
+}
+
+/* The R3F canvas wrapper. touch-action/user-select guards stop camera drags
+   from selecting text or scrolling the page. */
+#game-canvas {
+  position: fixed;
+  inset: 0;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
+  color: #f4f1e8;
+  z-index: 10;
+}
+
+.hud-title {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+}
+
+.hud-title h1 {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.hud-title p {
+  margin-top: 3px;
+  font-size: 12px;
+  opacity: 0.65;
+  font-style: italic;
+}
+
+.hud-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 20px;
+  font-size: 12px;
+  line-height: 1.9;
+  background: rgba(11, 13, 20, 0.55);
+  border: 1px solid rgba(244, 241, 232, 0.12);
+  border-radius: 8px;
+  padding: 10px 14px;
+  backdrop-filter: blur(4px);
+}
+
+.hud-controls kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0 5px;
+  margin-right: 2px;
+  text-align: center;
+  font-family: inherit;
+  font-size: 11px;
+  background: rgba(244, 241, 232, 0.12);
+  border: 1px solid rgba(244, 241, 232, 0.25);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+}
+
+.hud-debug-hint {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.45;
+}
