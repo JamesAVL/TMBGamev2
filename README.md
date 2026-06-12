@@ -5,19 +5,20 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
-**The Duo update**: Vince and Howard travel together — press **Q** to switch
-who you control (with banter); the other follows loyally and stays out of the
-scrap. Boss fights lock the switch. **Vince** sprays a glitter cone (skills:
-Extra Hold lingering mist, Wide Nozzle); **Howard** throws jazz records
-(skills: Rare Pressing — gold, double damage, pierces; Strong Arm). Level-ups
-bank skill points; press **T** to spend them across shared and per-legend
-skills with soft-capped stacking. The greybox range is patrolled by **Mod
-Wolves** — upright gents in navy suits, pocket squares, and wolf heads. THE
-TUNDRA run: Parka People waves, the Black Frost (break his composure with
-brazier embers — records work too), then claim the Egg of Mantumbi. All audio
-is synthesized Web Audio and all art is original primitives — no third-party
-assets yet. Lore reference: the Mighty Boosh fandom wiki; all dialogue is
-original.
+**The Duo update**: Vince and Howard adventure as a pair — press **Q** to
+switch who's on (with a handover line); the other stays just off-screen,
+keeping up a stream of quips, heckles when you're nearly dead, and reviews of
+your kills. Boss fights lock the switch. **Vince** sprays a glitter cone
+(skills: Extra Hold lingering mist, Wide Nozzle); **Howard** throws jazz
+records (skills: Rare Pressing — gold, double damage, pierces; Strong Arm).
+Level-ups bank skill points; press **T** to spend them across shared and
+per-legend skills with soft-capped stacking. The greybox range is patrolled
+by **Mod Wolves** — upright gents in navy suits, pocket squares, and wolf
+heads. THE TUNDRA run: Parka People waves, the Black Frost (break his
+composure with brazier embers — records work too), then claim the Egg of
+Mantumbi. All audio is synthesized Web Audio and all art is original
+primitives — no third-party assets yet. Lore reference: the Mighty Boosh
+fandom wiki; all dialogue is original.
 
 ## Prerequisites
 
