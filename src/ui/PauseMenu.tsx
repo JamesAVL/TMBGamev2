@@ -1,18 +1,21 @@
 import { setMasterVolume } from '../audio/sfx';
 import { runtime } from '../game/combat/runtime';
-import { useSettingsStore } from '../stores/settingsStore';
+import { isMouseScheme, useSettingsStore } from '../stores/settingsStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { useUiStore } from '../stores/uiStore';
-import { relockPointer } from './actions';
 import { wipeSaveAndReload } from './saveWipe';
 import { useState } from 'react';
+
+function relock() {
+  if (!isMouseScheme()) return;
+  document.querySelector<HTMLCanvasElement>('#game-canvas canvas')?.requestPointerLock();
+}
 
 export function PauseMenu() {
   const open = useUiStore((s) => s.pauseOpen);
   const volume = useSettingsStore((s) => s.volume);
   const performanceMode = useSettingsStore((s) => s.performanceMode);
   const controlScheme = useSettingsStore((s) => s.controlScheme);
-  const touchControls = useSettingsStore((s) => s.touchControls);
   const debugTools = useSettingsStore((s) => s.debugTools);
   const scene = useSceneStore((s) => s.scene);
   const [confirmWipe, setConfirmWipe] = useState(false);
@@ -22,7 +25,7 @@ export function PauseMenu() {
   const close = () => {
     useUiStore.getState().setPauseOpen(false);
     setConfirmWipe(false);
-    relockPointer();
+    relock();
   };
 
   const switchScheme = (scheme: 'mouse' | 'keyboard') => {
@@ -76,15 +79,6 @@ export function PauseMenu() {
         </div>
 
         <label className="pause-row">
-          <span>touch controls</span>
-          <input
-            type="checkbox"
-            checked={touchControls}
-            onChange={(e) => useSettingsStore.getState().setTouchControls(e.target.checked)}
-          />
-        </label>
-
-        <label className="pause-row">
           <span>performance mode</span>
           <input
             type="checkbox"
@@ -126,9 +120,7 @@ export function PauseMenu() {
         </div>
 
         <p className="title-foot">
-          {touchControls
-            ? 'stick — move · drag — look · pinch — zoom · big button — attack'
-            : 'mouse — steer · click — attack · Q — switch · T — skills · right-click — talk'}
+          mouse — steer · click — attack · Q — switch · T — skills · right-click — talk
         </p>
       </div>
     </div>

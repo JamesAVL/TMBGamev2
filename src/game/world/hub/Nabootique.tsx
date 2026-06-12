@@ -1,10 +1,9 @@
 import { ToonOutline } from '../../look/ToonOutline';
 import { getGradientMap } from '../../look/toon';
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Html, useTexture } from '@react-three/drei';
-import { RigidBody } from '@react-three/rapier';
-import * as THREE from 'three';
+import { Html } from '@react-three/drei';
+import type * as THREE from 'three';
 import { useHubStore } from '../../../stores/hubStore';
 import { useSceneStore } from '../../../stores/sceneStore';
 import { runtime } from '../../combat/runtime';
@@ -17,31 +16,6 @@ import { KayProp } from '../props/KayProp';
 
 const NABOO_POS: [number, number, number] = [0, 0, -5];
 const TALK_RANGE = 2.6;
-
-// Real boards underfoot (three.js example texture, MIT — see CREDITS.md),
-// toon-shaded so the grain sits inside the handmade look. Preloaded at module
-// scope so the floor never suspends the Physics boundary.
-const FLOOR_TEXTURE = '/textures/hardwood2_diffuse.jpg';
-useTexture.preload(FLOOR_TEXTURE);
-
-function WoodFloor() {
-  const map = useTexture(FLOOR_TEXTURE);
-  const boards = useMemo(() => {
-    map.wrapS = map.wrapT = THREE.RepeatWrapping;
-    map.repeat.set(3, 6); // source is 2:1 — this lands the planks square-ish
-    map.colorSpace = THREE.SRGBColorSpace;
-    map.anisotropy = 8;
-    return map;
-  }, [map]);
-  return (
-    <RigidBody type="fixed" colliders="cuboid">
-      <mesh receiveShadow position={[0, -0.25, 0]}>
-        <boxGeometry args={[16, 0.5, 16]} />
-        <meshToonMaterial gradientMap={getGradientMap()} map={boards} color="#caa176" />
-      </mesh>
-    </RigidBody>
-  );
-}
 
 function NabooNPC() {
   const groupRef = useRef<THREE.Group>(null);
@@ -137,7 +111,7 @@ export function Nabootique() {
       <pointLight position={[-5.5, 1.2, 4.5]} color="#7fd4ff" intensity={1} distance={6} />
 
       {/* Floor + walls + ceiling shadow box */}
-      <WoodFloor />
+      <Block size={[16, 0.5, 16]} position={[0, -0.25, 0]} color="#7a5b3a" />
       <Block size={[16, 4.4, 0.5]} position={[0, 2.2, -8]} color="#4a3a52" />
       <Block size={[16, 4.4, 0.5]} position={[0, 2.2, 8]} color="#4a3a52" />
       <Block size={[0.5, 4.4, 16]} position={[-8, 2.2, 0]} color="#4a3a52" />

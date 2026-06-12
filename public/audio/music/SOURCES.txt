@@ -1,4 +1,0 @@
-Assets in this folder, one line each:
-  <file> — <author> — <licence> — <source URL>
-
-(See "Asset drop zones" in README.md. GLB/GLTF only for models; 1K textures preferred.)
