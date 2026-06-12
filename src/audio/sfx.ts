@@ -168,4 +168,15 @@ export const sfx = {
     const { ctx: c, master: m } = audio();
     tone(c, m, 'sine', 700, 980, 0.09, 0.25);
   },
+  castCue() {
+    // the Black Frost winds up something cold — audible warning
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sine', 1400, 500, 0.3, 0.3);
+    noise(c, m, 0.25, 0.18, 4200, 1800);
+  },
+  beamFire() {
+    const { ctx: c, master: m } = audio();
+    tone(c, m, 'sawtooth', 700, 90, 0.3, 0.45);
+    noise(c, m, 0.2, 0.3, 2800, 600);
+  },
 };

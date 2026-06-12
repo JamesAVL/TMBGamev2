@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { ensureAudio, sfx } from '../../audio/sfx';
-import { XP_BY_KIND } from '../progression/skills';
+import { BASE_CRIT, XP_BY_KIND } from '../progression/skills';
 import { useCombatStore } from '../../stores/combatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useProfileStore } from '../../stores/profileStore';
@@ -37,7 +37,9 @@ export function PlayerCombat() {
   const sprayMatRef = useRef<THREE.MeshStandardMaterial>(null);
   const lastAttackRef = useRef(-Infinity);
   const lastRegenRef = useRef(0);
-  const deadAtRef = useRef(0);
+  const deadAtRef = useRef(0); // wall-clock seconds
+  const wasFrozenRef = useRef(false);
+  const iceRef = useRef<THREE.Mesh>(null);
   const [mists, setMists] = useState<Mist[]>([]);
   const mistSeq = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
@@ -49,8 +51,7 @@ export function PlayerCombat() {
       const combat = useCombatStore.getState();
       const entry = combat.enemies[id];
       if (!entry?.alive) return { connected: false, killed: false, immune: false, crit: false };
-      const stats = useRunStore.getState().stats;
-      const crit = Math.random() < stats.critChance;
+      const crit = Math.random() < BASE_CRIT;
       const result = combat.damageEnemy(id, crit ? dmg * 2 : dmg);
       if (result === 'none') return { connected: false, killed: false, immune: false, crit: false };
       if (result === 'immune')
@@ -66,11 +67,9 @@ export function PlayerCombat() {
 
     // Vince: a tight cone of weaponised glamour
     const sprayAttack = (p: { x: number; y: number; z: number }) => {
-      const stats = useRunStore.getState().stats;
-      const range = SPRAY_RANGE * stats.rangeMult * (1 + stats.sprayRangeBonus);
-      const halfAngleCos = Math.cos(
-        ((SPRAY_BASE_HALF_ANGLE + stats.sprayArcBonusDeg) * Math.PI) / 180,
-      );
+      const can = useRunStore.getState().stats.vince;
+      const range = SPRAY_RANGE * can.rangeMult;
+      const halfAngleCos = Math.cos(((SPRAY_BASE_HALF_ANGLE + can.arcBonusDeg) * Math.PI) / 180);
       sfx.spray();
       useCombatStore.getState().registerAttack();
       let connected = false;
@@ -83,7 +82,7 @@ export function PlayerCombat() {
         if (toEnemy.length() > range) continue;
         toEnemy.normalize();
         if (toEnemy.dot(forward) < halfAngleCos) continue;
-        const r = strike(id, stats.damage, 3, toEnemy);
+        const r = strike(id, can.damage, 3, toEnemy);
         connected ||= r.connected;
         killed ||= r.killed;
         immune ||= r.immune;
@@ -108,13 +107,13 @@ export function PlayerCombat() {
       if (killed) sfx.enemyDeath();
 
       // Extra Hold: the mist remembers
-      if (stats.sprayLingerSeconds > 0) {
+      if (can.lingerSeconds > 0) {
         const now = runtime.time;
         const mist: Mist = {
           id: mistSeq.current++,
           x: p.x + forward.x * 1.5,
           z: p.z + forward.z * 1.5,
-          until: now + stats.sprayLingerSeconds,
+          until: now + can.lingerSeconds,
           nextTick: now + MIST_TICK,
         };
         setMists((zs) => [...zs.slice(-(MAX_MISTS - 1)), mist]);
@@ -123,10 +122,10 @@ export function PlayerCombat() {
 
     // Howard: a 12-inch of pure jazz, thrown flat and spinning
     const recordAttack = (p: { x: number; y: number; z: number }) => {
-      const stats = useRunStore.getState().stats;
-      const rare = Math.random() < stats.rareChance;
-      const dmg = stats.damage * (rare ? 2 : 1);
-      const knockback = 3 + stats.throwKnockbackBonus + (rare ? 1 : 0);
+      const collection = useRunStore.getState().stats.howard;
+      const rare = Math.random() < collection.rareChance;
+      const dmg = collection.damage * (rare ? 2 : 1);
+      const knockback = 3 + collection.knockbackBonus + (rare ? 1 : 0);
       sfx.throwWhoosh();
       throwRecord({
         x: p.x + forward.x * 0.5,
@@ -134,8 +133,8 @@ export function PlayerCombat() {
         z: p.z + forward.z * 0.5,
         dx: forward.x,
         dz: forward.z,
-        speed: RECORD_SPEED * stats.throwSpeedMult,
-        range: RECORD_RANGE * stats.rangeMult * (1 + stats.throwRangeBonus),
+        speed: RECORD_SPEED * collection.speedMult,
+        range: RECORD_RANGE * collection.rangeMult,
         rare,
         onEnemyHit: (id, dir) => {
           const r = strike(id, dmg, knockback, dir);
@@ -165,9 +164,12 @@ export function PlayerCombat() {
       if (run.panelOpen) return; // mid skill-spend
       const character = useProfileStore.getState().character;
       const cooldown =
-        (character === 'vince' ? SPRAY_COOLDOWN : RECORD_COOLDOWN) * run.stats.cooldownMult;
+        character === 'vince'
+          ? SPRAY_COOLDOWN * run.stats.vince.cooldownMult
+          : RECORD_COOLDOWN * run.stats.howard.cooldownMult;
       if (now - lastAttackRef.current < cooldown) return;
-      if (usePlayerStore.getState().dead) return;
+      const player = usePlayerStore.getState();
+      if (player.dead || now < player.frozenUntil) return; // no flailing in the ice
       const body = runtime.player?.group;
       if (!body) return;
       lastAttackRef.current = now;
@@ -223,11 +225,11 @@ export function PlayerCombat() {
       sprayRef.current.visible = active;
       if (active) {
         const k = t / SPRAY_LIFETIME;
-        const flare = 1 + stats.sprayArcBonusDeg / 55;
+        const flare = 1 + stats.vince.arcBonusDeg / 55;
         sprayRef.current.scale.set(
           (0.6 + k * 0.7) * flare,
           (0.6 + k * 0.7) * flare,
-          stats.rangeMult * (1 + stats.sprayRangeBonus),
+          stats.vince.rangeMult,
         );
         sprayMatRef.current.opacity = 0.7 * (1 - k);
       }
@@ -245,7 +247,7 @@ export function PlayerCombat() {
             toEnemy.set(t.x - mist.x, 0, t.z - mist.z);
             if (toEnemy.length() > MIST_RADIUS) continue;
             toEnemy.normalize();
-            mistStrike(id, stats.damage * MIST_DAMAGE_FACTOR, toEnemy);
+            mistStrike(id, stats.vince.damage * MIST_DAMAGE_FACTOR, toEnemy);
           }
         }
         if (now >= mist.until) anyExpired = true;
@@ -255,8 +257,8 @@ export function PlayerCombat() {
 
     // Polo Discipline: mint-fresh recovery
     const player = usePlayerStore.getState();
-    if (stats.regenInterval > 0 && !player.dead) {
-      if (now - lastRegenRef.current >= stats.regenInterval) {
+    if (stats.shared.regenInterval > 0 && !player.dead) {
+      if (now - lastRegenRef.current >= stats.shared.regenInterval) {
         lastRegenRef.current = now;
         player.heal(1);
       }
@@ -265,6 +267,20 @@ export function PlayerCombat() {
     }
 
     const body = runtime.player?.group;
+
+    // The Black Frost's signature: frozen solid for a moment. Lock the body
+    // in place (an ice statue), show the block, thaw cleanly.
+    const frozen = !player.dead && now < player.frozenUntil;
+    if (body && frozen && !wasFrozenRef.current) {
+      wasFrozenRef.current = true;
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      body.lockTranslations(true, true);
+      sfx.freezeSnap();
+    } else if (body && !frozen && wasFrozenRef.current) {
+      wasFrozenRef.current = false;
+      body.lockTranslations(false, true);
+    }
+    if (iceRef.current) iceRef.current.visible = frozen;
     const teleportHome = () => {
       if (!body) return;
       const [x, y, z] = movementConfig.position;
@@ -277,9 +293,19 @@ export function PlayerCombat() {
 
     // Death → brief pause → respawn. Dying inside a realm ends the run and
     // sends you home to the greybox (the SceneManager handles the teleport).
+    // WALL clock, deliberately: the game clock pauses with the skills panel,
+    // and a death must never deadlock behind a pause.
     if (player.dead) {
-      if (deadAtRef.current === 0) deadAtRef.current = now;
-      if (now - deadAtRef.current > RESPAWN_DELAY) {
+      const wall = performance.now() / 1000;
+      if (deadAtRef.current === 0) {
+        deadAtRef.current = wall;
+        useRunStore.getState().setPanelOpen(false); // no spending from beyond
+        if (body && wasFrozenRef.current) {
+          wasFrozenRef.current = false;
+          body.lockTranslations(false, true);
+        }
+      }
+      if (wall - deadAtRef.current > RESPAWN_DELAY) {
         deadAtRef.current = 0;
         const scenes = useSceneStore.getState();
         if (scenes.scene !== 'greybox') {
@@ -310,6 +336,19 @@ export function PlayerCombat() {
           transparent
           depthWrite={false}
           side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Frozen solid: the ice block (rides the body) */}
+      <mesh ref={iceRef} visible={false} position={[0, 0, 0]}>
+        <boxGeometry args={[1.05, 1.7, 1.05]} />
+        <meshStandardMaterial
+          color="#9fd4ff"
+          emissive="#7fd4ff"
+          emissiveIntensity={0.5}
+          transparent
+          opacity={0.45}
+          roughness={0.1}
+          depthWrite={false}
         />
       </mesh>
       {/* Extra Hold mists live in world space, not on the moving body */}

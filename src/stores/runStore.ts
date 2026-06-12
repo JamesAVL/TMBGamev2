@@ -32,7 +32,9 @@ export const useRunStore = create<RunState>()((set, get) => ({
   xp: 0,
   level: 0,
   xpToNext: xpForLevel(0),
-  unspentPoints: 0,
+  // every run opens with one point to spend — points earned always equal the
+  // level badge, which starts at 1
+  unspentPoints: 1,
   points: {},
   panelOpen: false,
   stats: computeStats({}),
@@ -71,7 +73,7 @@ export const useRunStore = create<RunState>()((set, get) => ({
       xp: 0,
       level: 0,
       xpToNext: xpForLevel(0),
-      unspentPoints: 0,
+      unspentPoints: 1,
       points: {},
       panelOpen: false,
       stats: computeStats({}),
