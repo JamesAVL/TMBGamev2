@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { runtime } from '../game/combat/runtime';
+import { useRunTracker } from './runTrackerStore';
 
 export type EnemyKind = 'modwolf' | 'hitcher' | 'parka' | 'blackfrost';
 
@@ -85,6 +86,7 @@ export const useCombatStore = create<CombatState>()((set, get) => ({
     const now = runtime.time;
     const hp = Math.max(0, e.hp - amount);
     const alive = hp > 0;
+    if (!alive) useRunTracker.getState().addKill();
     set({
       enemies: {
         ...get().enemies,

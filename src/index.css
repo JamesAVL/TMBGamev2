@@ -664,3 +664,237 @@ body,
   opacity: 0.25;
   cursor: default;
 }
+
+/* Title screen */
+.title-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(23, 18, 33, 0.55) 0%,
+    rgba(11, 13, 20, 0.92) 100%
+  );
+  pointer-events: auto;
+  color: #f4f1e8;
+}
+
+.title-card {
+  text-align: center;
+}
+
+.title-over,
+.title-under {
+  font-size: 13px;
+  font-style: italic;
+  opacity: 0.7;
+  letter-spacing: 0.12em;
+}
+
+.title-card h1 {
+  margin: 10px 0 8px;
+  font-size: clamp(34px, 6vw, 64px);
+  letter-spacing: 0.18em;
+  line-height: 1.1;
+  text-shadow: 0 4px 30px rgba(216, 79, 154, 0.45);
+}
+
+.title-card h1 span {
+  display: block;
+  font-size: 0.5em;
+  letter-spacing: 0.6em;
+  color: #ffd76e;
+}
+
+.title-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 26px 0 18px;
+}
+
+.title-actions button,
+.pause-actions button {
+  font-family: inherit;
+  font-size: 14px;
+  color: #f4f1e8;
+  background: rgba(244, 241, 232, 0.07);
+  border: 1px solid rgba(244, 241, 232, 0.35);
+  border-radius: 999px;
+  padding: 10px 26px;
+  cursor: pointer;
+}
+
+.title-actions button:hover,
+.pause-actions button:hover {
+  border-color: #ffd76e;
+}
+
+button.title-primary {
+  background: #ffd76e;
+  border-color: #ffd76e;
+  color: #0b0d14;
+  font-weight: 700;
+}
+
+button.title-danger {
+  border-color: #c4332f;
+  color: #ff9a8a;
+}
+
+.title-foot {
+  font-size: 11px;
+  opacity: 0.5;
+  letter-spacing: 0.08em;
+}
+
+/* Pause menu */
+.pause-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  background: rgba(11, 13, 20, 0.72);
+  backdrop-filter: blur(3px);
+  pointer-events: auto;
+  color: #f4f1e8;
+}
+
+.pause-card {
+  width: min(420px, 92vw);
+  background: rgba(20, 16, 28, 0.96);
+  border: 1px solid rgba(244, 241, 232, 0.2);
+  border-radius: 14px;
+  padding: 22px 24px;
+}
+
+.pause-card h3 {
+  text-align: center;
+  font-size: 20px;
+  letter-spacing: 0.32em;
+  color: #ffd76e;
+  margin-bottom: 18px;
+}
+
+.pause-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.pause-row input[type='range'] {
+  width: 55%;
+  accent-color: #ffd76e;
+}
+
+.pause-row input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ffd76e;
+}
+
+.pause-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.pause-toggle button {
+  font-family: inherit;
+  font-size: 11px;
+  color: #f4f1e8;
+  background: rgba(244, 241, 232, 0.07);
+  border: 1px solid rgba(244, 241, 232, 0.25);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.pause-toggle button.active {
+  background: #ffd76e;
+  border-color: #ffd76e;
+  color: #0b0d14;
+  font-weight: 700;
+}
+
+.pause-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.pause-card .title-foot {
+  margin-top: 14px;
+  text-align: center;
+}
+
+/* Gear button + run summary */
+.hud-gear {
+  position: absolute;
+  top: 84px;
+  right: 22px;
+  width: 34px;
+  height: 34px;
+  font-size: 17px;
+  color: #f4f1e8;
+  background: rgba(11, 13, 20, 0.55);
+  border: 1px solid rgba(244, 241, 232, 0.25);
+  border-radius: 50%;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.hud-gear:hover {
+  border-color: #ffd76e;
+}
+
+.run-summary {
+  position: absolute;
+  top: 26%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(360px, 88vw);
+  text-align: center;
+  background: rgba(20, 16, 28, 0.95);
+  border: 1px solid rgba(255, 215, 110, 0.4);
+  border-radius: 14px;
+  padding: 18px 20px;
+  pointer-events: auto;
+}
+
+.run-summary h4 {
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  color: #ffd76e;
+  margin-bottom: 8px;
+}
+
+.run-summary p {
+  font-size: 13px;
+}
+
+.run-summary-line {
+  margin-top: 6px;
+  font-style: italic;
+  opacity: 0.65;
+  font-size: 12px;
+}
+
+.run-summary button {
+  margin-top: 12px;
+  font-family: inherit;
+  font-size: 12px;
+  color: #0b0d14;
+  background: #ffd76e;
+  border: none;
+  border-radius: 999px;
+  padding: 7px 22px;
+  cursor: pointer;
+}

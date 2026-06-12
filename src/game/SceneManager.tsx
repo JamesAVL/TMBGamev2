@@ -3,6 +3,8 @@ import { sfx } from '../audio/sfx';
 import { useCombatStore } from '../stores/combatStore';
 import { useHubStore } from '../stores/hubStore';
 import { usePlayerStore } from '../stores/playerStore';
+import { useRunStore } from '../stores/runStore';
+import { useRunTracker } from '../stores/runTrackerStore';
 import { useSceneStore, type SceneId } from '../stores/sceneStore';
 import { clearProjectiles } from './combat/projectilePool';
 import { GREYBOX_SPAWNS } from './enemies/spawns';
@@ -34,9 +36,12 @@ export function SceneManager() {
     useHubStore.getState().setDialogOpen(false);
     useHubStore.getState().setShopOpen(false);
     useHubStore.getState().setNearNaboo(false);
-    // The Mirror Ball arms once per realm entry
-    if (scene === 'tundra' && useHubStore.getState().mods.hasMirrorBall) {
-      usePlayerStore.getState().armMirror();
+    // The Mirror Ball arms once per realm entry; the scoreboard starts
+    if (scene === 'tundra') {
+      useRunTracker.getState().start(useRunStore.getState().level);
+      if (useHubStore.getState().mods.hasMirrorBall) {
+        usePlayerStore.getState().armMirror();
+      }
     }
     if (!firstRun.current) sfx.portal();
     firstRun.current = false;

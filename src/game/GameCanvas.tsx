@@ -3,11 +3,12 @@ import { Canvas } from '@react-three/fiber';
 import { KeyboardControls } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
-import { DEBUG } from '../debug/flags';
 import { useCombatStore } from '../stores/combatStore';
 import { useHubStore } from '../stores/hubStore';
 import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useUiStore } from '../stores/uiStore';
 import { keyboardMap } from './controls';
 import { DamageNumbers } from './combat/DamageNumbers';
 import { Projectiles } from './combat/Projectiles';
@@ -43,6 +44,9 @@ export function GameCanvas() {
   const hitStop = useCombatStore((s) => s.hitStopActive);
   const skillsOpen = useRunStore((s) => s.panelOpen);
   const hubUiOpen = useHubStore((s) => s.dialogOpen || s.shopOpen);
+  const framePaused = useUiStore((s) => s.phase !== 'playing' || s.pauseOpen);
+  const debugTools = useSettingsStore((s) => s.debugTools);
+  const performanceMode = useSettingsStore((s) => s.performanceMode);
   const scene = useSceneStore((s) => s.scene);
 
   return (
@@ -51,8 +55,8 @@ export function GameCanvas() {
           frame-rate cost. Canvas antialias off — the EffectComposer renders
           offscreen with its own MSAA, so canvas MSAA is pure waste. */}
       <Canvas
-        shadows
-        dpr={[1, 1.5]}
+        shadows={!performanceMode}
+        dpr={performanceMode ? [1, 1] : [1, 1.5]}
         camera={{ fov: 55, near: 0.1, far: 300 }}
         gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
       >
@@ -64,7 +68,7 @@ export function GameCanvas() {
           </>
         )}
         <PointerLockOnClick />
-        {DEBUG && perfHud && (
+        {debugTools && perfHud && (
           <Suspense fallback={null}>
             <Perf position="top-left" />
           </Suspense>
@@ -76,8 +80,8 @@ export function GameCanvas() {
         <Suspense fallback={null}>
           <Physics
             timeStep={fixedTimestep ? 1 / 60 : 'vary'}
-            paused={hitStop || skillsOpen || hubUiOpen}
-            debug={DEBUG && physicsWireframe}
+            paused={hitStop || skillsOpen || hubUiOpen || framePaused}
+            debug={debugTools && physicsWireframe}
           >
             <GameClock />
             <KeyboardControls map={keyboardMap}>

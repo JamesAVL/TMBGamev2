@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CLASSIC_CONTROLS } from '../debug/flags';
 import { sfx } from '../audio/sfx';
 import {
   BOSS_LOCK_LINE,
@@ -18,11 +17,14 @@ import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { useProfileStore } from '../stores/profileStore';
 import { useRunStore } from '../stores/runStore';
+import { useRunTracker } from '../stores/runTrackerStore';
 import { useSceneStore } from '../stores/sceneStore';
+import { isMouseScheme, useSettingsStore } from '../stores/settingsStore';
+import { useUiStore } from '../stores/uiStore';
 import { usePointerLock } from './usePointerLock';
 
 function relockPointer() {
-  if (CLASSIC_CONTROLS) return;
+  if (!isMouseScheme()) return;
   const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
   canvas?.requestPointerLock();
 }
@@ -249,6 +251,28 @@ function TatShop() {
   );
 }
 
+function RunSummaryCard() {
+  const summary = useRunTracker((s) => s.lastSummary);
+  const scene = useSceneStore((s) => s.scene);
+  if (!summary || scene !== 'hub') return null;
+  const mm = Math.floor(summary.seconds / 60);
+  const ss = String(Math.floor(summary.seconds % 60)).padStart(2, '0');
+  return (
+    <div className="run-summary">
+      <h4>THE RUN — {summary.outcome === 'cleared' ? 'CLEARED' : 'LOST'}</h4>
+      <p>
+        {mm}:{ss} · {summary.kills} kills · +{summary.euros} euros · +{summary.levels} levels
+      </p>
+      <p className="run-summary-line">
+        {summary.outcome === 'cleared'
+          ? 'Naboo nods. Almost.'
+          : 'The Tundra keeps your deposit. The shop keeps you.'}
+      </p>
+      <button onClick={() => useRunTracker.getState().dismissSummary()}>right.</button>
+    </div>
+  );
+}
+
 function BossBar() {
   const boss = useCombatStore((s) => s.enemies['blackfrost']);
   if (!boss || !boss.aggro || !boss.alive) return null;
@@ -275,6 +299,10 @@ export function Hud() {
   const objective = useSceneStore((s) => s.objective);
   const phase = useSceneStore((s) => s.tundra.phase);
   const character = useProfileStore((s) => s.character);
+  const controlScheme = useSettingsStore((s) => s.controlScheme);
+  const debugTools = useSettingsStore((s) => s.debugTools);
+  const uiPhase = useUiStore((s) => s.phase);
+  const classic = controlScheme === 'keyboard';
   const nearNaboo = useHubStore((s) => s.nearNaboo);
   const euros = useHubStore((s) => s.euros);
 
@@ -293,7 +321,19 @@ export function Hud() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
+      if (useUiStore.getState().phase !== 'playing') return;
+      if (e.code === 'KeyP') {
+        const ui = useUiStore.getState();
+        const hubP = useHubStore.getState();
+        if (hubP.dialogOpen || hubP.shopOpen || useRunStore.getState().panelOpen) return;
+        const opening = !ui.pauseOpen;
+        ui.setPauseOpen(opening);
+        if (opening) document.exitPointerLock();
+        else relockPointer();
+        return;
+      }
       if (e.code === 'KeyT') {
+        if (useUiStore.getState().pauseOpen) return;
         if (usePlayerStore.getState().dead) return; // no spending from beyond
         const hubT = useHubStore.getState();
         if (hubT.dialogOpen || hubT.shopOpen) return; // Naboo is talking
@@ -317,6 +357,7 @@ export function Hud() {
       if (e.code === 'KeyQ') {
         const run = useRunStore.getState();
         const hubQ = useHubStore.getState();
+        if (useUiStore.getState().pauseOpen) return;
         if (run.panelOpen || hubQ.dialogOpen || hubQ.shopOpen) return;
         if (usePlayerStore.getState().dead) return;
         const boss = useCombatStore.getState().enemies['blackfrost'];
@@ -335,6 +376,8 @@ export function Hud() {
     // right-click talks — quick, no reaching for the keyboard
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 2) return;
+      const uiM = useUiStore.getState();
+      if (uiM.phase !== 'playing' || uiM.pauseOpen) return;
       const hub = useHubStore.getState();
       if (hub.dialogOpen || hub.shopOpen) return; // the dialog handles itself
       if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
@@ -354,6 +397,8 @@ export function Hud() {
   useEffect(() => {
     const interval = setInterval(() => {
       if (Math.random() > 0.45) return;
+      const uiQ = useUiStore.getState();
+      if (uiQ.phase !== 'playing' || uiQ.pauseOpen) return;
       if (useRunStore.getState().panelOpen || usePlayerStore.getState().dead) return;
       const absent = useProfileStore.getState().character === 'vince' ? 'howard' : 'vince';
       const line = pick(OFFSCREEN_QUIPS[absent]);
@@ -438,6 +483,19 @@ export function Hud() {
         </div>
       )}
       <div className="hud-shrapnel">{euros} euros</div>
+      {uiPhase === 'playing' && (
+        <button
+          className="hud-gear"
+          onClick={() => {
+            useUiStore.getState().setPauseOpen(true);
+            document.exitPointerLock();
+          }}
+          aria-label="menu"
+        >
+          ⚙
+        </button>
+      )}
+      <RunSummaryCard />
       <div className="hud-hp" aria-label={`health ${hp} of ${maxHp}`}>
         {Array.from({ length: maxHp }, (_, i) => (
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />
@@ -461,11 +519,11 @@ export function Hud() {
       )}
       <NabooDialog />
       <TatShop />
-      {!CLASSIC_CONTROLS && !locked && !dead && (
+      {!classic && !locked && !dead && uiPhase === 'playing' && (
         <div className="hud-lock-prompt">click to take control</div>
       )}
       <div className="hud-controls">
-        {CLASSIC_CONTROLS ? (
+        {classic ? (
           <>
             <div>
               <kbd>W</kbd>
@@ -477,7 +535,7 @@ export function Hud() {
             </div>
             <div>
               drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>Q</kbd> —
-              switch &nbsp;·&nbsp; <kbd>T</kbd> — skills
+              switch &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>P</kbd> — menu
             </div>
           </>
         ) : (
@@ -491,15 +549,11 @@ export function Hud() {
             <div>
               <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
               <kbd>Q</kbd> — switch legend &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp;{' '}
-              <kbd>Esc</kbd> — release mouse
+              <kbd>P</kbd> — menu &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
             </div>
           </>
         )}
-        {import.meta.env.DEV && (
-          <div className="hud-debug-hint">
-            ?debug — tuning panels &nbsp;·&nbsp; ?classic — old control scheme
-          </div>
-        )}
+        {debugTools && <div className="hud-debug-hint">debug tools on — see the leva panels</div>}
       </div>
     </div>
   );
