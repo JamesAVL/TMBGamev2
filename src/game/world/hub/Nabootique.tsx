@@ -19,9 +19,13 @@ const NABOO_POS: [number, number, number] = [0, 0, -5];
 const TALK_RANGE = 2.6;
 
 // Real boards underfoot (three.js example texture, MIT — see CREDITS.md),
-// toon-shaded so the grain sits inside the handmade look.
+// toon-shaded so the grain sits inside the handmade look. Preloaded at module
+// scope so the floor never suspends the Physics boundary.
+const FLOOR_TEXTURE = '/textures/hardwood2_diffuse.jpg';
+useTexture.preload(FLOOR_TEXTURE);
+
 function WoodFloor() {
-  const map = useTexture('/textures/hardwood2_diffuse.jpg');
+  const map = useTexture(FLOOR_TEXTURE);
   const boards = useMemo(() => {
     map.wrapS = map.wrapT = THREE.RepeatWrapping;
     map.repeat.set(3, 6); // source is 2:1 — this lands the planks square-ish

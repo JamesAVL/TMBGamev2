@@ -7,27 +7,37 @@ import { RigidBody } from '@react-three/rapier';
 
 const BASE = '/models/kaykit/';
 
-export type KayPropName =
-  | 'shelf_large'
-  | 'shelf_small'
-  | 'barrel_large_decorated'
-  | 'barrel_small_stack'
-  | 'box_small_decorated'
-  | 'box_stacked'
-  | 'crates_stacked'
-  | 'bottle_A_labeled_green'
-  | 'bottle_B_brown'
-  | 'candle_triple'
-  | 'banner_patternA_red'
-  | 'chest_gold'
-  | 'keg_decorated'
-  | 'coin_stack_medium'
-  | 'pillar_decorated'
-  | 'column'
-  | 'table_long'
-  | 'chair'
-  | 'rubble_large'
-  | 'rubble_half';
+// Source of truth for prop names — the type derives from it so the list is
+// iterable for preloading.
+const KAY_PROP_NAMES = [
+  'shelf_large',
+  'shelf_small',
+  'barrel_large_decorated',
+  'barrel_small_stack',
+  'box_small_decorated',
+  'box_stacked',
+  'crates_stacked',
+  'bottle_A_labeled_green',
+  'bottle_B_brown',
+  'candle_triple',
+  'banner_patternA_red',
+  'chest_gold',
+  'keg_decorated',
+  'coin_stack_medium',
+  'pillar_decorated',
+  'column',
+  'table_long',
+  'chair',
+  'rubble_large',
+  'rubble_half',
+] as const;
+
+export type KayPropName = (typeof KAY_PROP_NAMES)[number];
+
+// Warm the GLTF cache at module load (main chunk → fetches start at boot, in
+// parallel with rapier's wasm init) so props never suspend inside the Physics
+// Suspense boundary and thrash the world with remounts.
+for (const name of KAY_PROP_NAMES) useGLTF.preload(`${BASE}${name}.glb`);
 
 export function KayProp({
   name,

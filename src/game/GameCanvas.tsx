@@ -52,13 +52,16 @@ export function GameCanvas() {
   return (
     <div id="game-canvas">
       {/* dpr capped at 1.5: full retina/4K resolution + bloom is the main
-          frame-rate cost. Canvas antialias off — the EffectComposer renders
-          offscreen with its own MSAA, so canvas MSAA is pure waste. */}
+          frame-rate cost. Normal mode: canvas antialias off — the
+          EffectComposer renders offscreen with its own MSAA, so canvas MSAA is
+          pure waste. Perf mode: the composer is skipped (Effects.tsx), so
+          cheap context MSAA is the only AA. gl options bind at context
+          creation — a mid-session perf toggle changes AA only after reload. */}
       <Canvas
         shadows={!performanceMode}
         dpr={performanceMode ? [1, 1] : [1, 1.5]}
         camera={{ fov: 55, near: 0.1, far: 300 }}
-        gl={{ antialias: false, powerPreference: 'high-performance', stencil: false }}
+        gl={{ antialias: performanceMode, powerPreference: 'high-performance', stencil: false }}
       >
         {scene === 'greybox' && (
           <>
@@ -74,12 +77,16 @@ export function GameCanvas() {
           </Suspense>
         )}
         {/* Suspense: rapier's wasm init suspends on first load.
-            timeStep="vary" matches ecctrl's canonical setup (its defaults were
-            tuned under it); revisit fixed 1/60 + interpolation if combat ever
-            needs determinism or high-refresh consistency. */}
+            timeStep: "vary" matches ecctrl's canonical setup (its defaults
+            were tuned under it) — but it feeds real frame deltas straight into
+            the integrator, and at very low FPS (deltas clamp at 0.5s) ecctrl's
+            autoBalance yaw spring goes unstable: the idle character spins.
+            Perf mode therefore uses the fixed 1/60 accumulator (interpolate
+            defaults on), which bounds per-step dt no matter the frame rate.
+            fixedTimestep stays as the leva A/B for desktop testing. */}
         <Suspense fallback={null}>
           <Physics
-            timeStep={fixedTimestep ? 1 / 60 : 'vary'}
+            timeStep={performanceMode || fixedTimestep ? 1 / 60 : 'vary'}
             paused={hitStop || skillsOpen || hubUiOpen || framePaused}
             debug={debugTools && physicsWireframe}
           >
