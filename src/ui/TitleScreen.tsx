@@ -1,15 +1,13 @@
 import { useState } from 'react';
-import { isMouseScheme } from '../stores/settingsStore';
+import { ensureAudio } from '../audio/sfx';
+import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
+import { relockPointer } from './actions';
 import { hasSave, wipeSaveAndReload } from './saveWipe';
-
-function relock() {
-  if (!isMouseScheme()) return;
-  document.querySelector<HTMLCanvasElement>('#game-canvas canvas')?.requestPointerLock();
-}
 
 export function TitleScreen() {
   const phase = useUiStore((s) => s.phase);
+  const touchControls = useSettingsStore((s) => s.touchControls);
   const [confirmWipe, setConfirmWipe] = useState(false);
 
   if (phase !== 'title') return null;
@@ -18,7 +16,8 @@ export function TitleScreen() {
 
   const begin = () => {
     useUiStore.getState().setPhase('playing');
-    relock(); // the click is the user gesture
+    ensureAudio(); // the tap/click is the user gesture
+    relockPointer();
   };
 
   return (
@@ -44,7 +43,9 @@ export function TitleScreen() {
             ))}
         </div>
         <p className="title-foot">
-          mouse steers · click sprays/throws · Q switches · T skills · P menu
+          {touchControls
+            ? 'stick moves · drag looks · the big button sprays/throws'
+            : 'mouse steers · click sprays/throws · Q switches · T skills · P menu'}
         </p>
       </div>
     </div>

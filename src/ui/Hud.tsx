@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { sfx } from '../audio/sfx';
 import {
-  BOSS_LOCK_LINE,
   COMPOSURE_HINTS,
   KILL_QUIPS,
   LOW_HP_QUIPS,
   OFFSCREEN_QUIPS,
-  SWITCH_LINES,
   TUNDRA_ENTRY_EXCHANGES,
 } from '../game/dialogue/banter';
 import { nabooLines } from '../game/dialogue/naboo';
@@ -19,17 +16,18 @@ import { useProfileStore } from '../stores/profileStore';
 import { useRunStore } from '../stores/runStore';
 import { useRunTracker } from '../stores/runTrackerStore';
 import { useSceneStore } from '../stores/sceneStore';
-import { isMouseScheme, useSettingsStore } from '../stores/settingsStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
+import {
+  pick,
+  relockPointer,
+  switchLegend,
+  talkToNaboo,
+  togglePause,
+  toggleSkills,
+} from './actions';
+import { TouchButtons } from './TouchControls';
 import { usePointerLock } from './usePointerLock';
-
-function relockPointer() {
-  if (!isMouseScheme()) return;
-  const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
-  canvas?.requestPointerLock();
-}
-
-const pick = <T,>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
 function XpBar() {
   const xp = useRunStore((s) => s.xp);
@@ -178,7 +176,11 @@ function NabooDialogInner() {
         <div className="hud-dialog-name">NABOO</div>
         <p className="hud-dialog-line">{line}</p>
         <div className="hud-dialog-actions">
-          {!last && <button onClick={() => setLineIdx((i) => i + 1)}>… (right-click)</button>}
+          {!last && (
+            <button onClick={() => setLineIdx((i) => i + 1)}>
+              {useSettingsStore.getState().touchControls ? '…' : '… (right-click)'}
+            </button>
+          )}
           {last && (
             <>
               <button
@@ -300,6 +302,7 @@ export function Hud() {
   const phase = useSceneStore((s) => s.tundra.phase);
   const character = useProfileStore((s) => s.character);
   const controlScheme = useSettingsStore((s) => s.controlScheme);
+  const touchMode = useSettingsStore((s) => s.touchControls);
   const debugTools = useSettingsStore((s) => s.debugTools);
   const uiPhase = useUiStore((s) => s.phase);
   const classic = controlScheme === 'keyboard';
@@ -316,74 +319,23 @@ export function Hud() {
     bubbleTimer.current = setTimeout(() => setBubble(null), holdMs);
   }, []);
 
-  // T toggles the skills panel; Q swaps legends (keydown is a user
-  // activation, so both paths may re-capture the pointer).
+  // Keyboard verbs route through the shared actions (also used by the touch
+  // buttons). Keydown is a user activation, so each may re-capture the pointer.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
       if (useUiStore.getState().phase !== 'playing') return;
-      if (e.code === 'KeyP') {
-        const ui = useUiStore.getState();
-        const hubP = useHubStore.getState();
-        if (hubP.dialogOpen || hubP.shopOpen || useRunStore.getState().panelOpen) return;
-        const opening = !ui.pauseOpen;
-        ui.setPauseOpen(opening);
-        if (opening) document.exitPointerLock();
-        else relockPointer();
-        return;
-      }
-      if (e.code === 'KeyT') {
-        if (useUiStore.getState().pauseOpen) return;
-        if (usePlayerStore.getState().dead) return; // no spending from beyond
-        const hubT = useHubStore.getState();
-        if (hubT.dialogOpen || hubT.shopOpen) return; // Naboo is talking
-        const run = useRunStore.getState();
-        const opening = !run.panelOpen;
-        run.setPanelOpen(opening);
-        if (opening) document.exitPointerLock();
-        else relockPointer();
-        return;
-      }
-      if (e.code === 'KeyE') {
-        const hub = useHubStore.getState();
-        if (hub.shopOpen) return; // buttons handle the shop
-        if (hub.dialogOpen) return; // dialog advances via its button
-        if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
-          hub.setDialogOpen(true);
-          document.exitPointerLock();
-        }
-        return;
-      }
-      if (e.code === 'KeyQ') {
-        const run = useRunStore.getState();
-        const hubQ = useHubStore.getState();
-        if (useUiStore.getState().pauseOpen) return;
-        if (run.panelOpen || hubQ.dialogOpen || hubQ.shopOpen) return;
-        if (usePlayerStore.getState().dead) return;
-        const boss = useCombatStore.getState().enemies['blackfrost'];
-        if (boss?.alive && boss.aggro) {
-          showBubble(BOSS_LOCK_LINE);
-          return;
-        }
-        // The other legend is just off-screen — the swap happens in place.
-        useProfileStore.getState().switchCharacter();
-        sfx.spend();
-        const incoming = useProfileStore.getState().character;
-        const line = pick(SWITCH_LINES[incoming]);
+      if (e.code === 'KeyP') togglePause();
+      else if (e.code === 'KeyT') toggleSkills();
+      else if (e.code === 'KeyE') talkToNaboo();
+      else if (e.code === 'KeyQ') {
+        const line = switchLegend();
         if (line) showBubble(line);
       }
     };
     // right-click talks — quick, no reaching for the keyboard
     const onMouseDown = (e: MouseEvent) => {
-      if (e.button !== 2) return;
-      const uiM = useUiStore.getState();
-      if (uiM.phase !== 'playing' || uiM.pauseOpen) return;
-      const hub = useHubStore.getState();
-      if (hub.dialogOpen || hub.shopOpen) return; // the dialog handles itself
-      if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
-        hub.setDialogOpen(true);
-        document.exitPointerLock();
-      }
+      if (e.button === 2) talkToNaboo();
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onMouseDown);
@@ -434,7 +386,10 @@ export function Hud() {
   // Level-up is unambiguous: a point banked, and where to spend it.
   useEffect(() => {
     return useRunStore.subscribe((s, prev) => {
-      if (s.level > prev.level) showBubble('+1 skill point — press T to spend it', 2400);
+      if (s.level > prev.level) {
+        const how = useSettingsStore.getState().touchControls ? 'tap SKILLS' : 'press T';
+        showBubble(`+1 skill point — ${how} to spend it`, 2400);
+      }
     });
   }, [showBubble]);
 
@@ -484,14 +439,7 @@ export function Hud() {
       )}
       <div className="hud-shrapnel">{euros} euros</div>
       {uiPhase === 'playing' && (
-        <button
-          className="hud-gear"
-          onClick={() => {
-            useUiStore.getState().setPauseOpen(true);
-            document.exitPointerLock();
-          }}
-          aria-label="menu"
-        >
+        <button className="hud-gear" onClick={togglePause} aria-label="menu">
           ⚙
         </button>
       )}
@@ -514,47 +462,58 @@ export function Hud() {
           </p>
         </div>
       )}
-      {nearNaboo && scene === 'hub' && (
+      {nearNaboo && scene === 'hub' && !touchMode && (
         <div className="hud-talk-prompt">right-click — talk to Naboo</div>
       )}
       <NabooDialog />
       <TatShop />
-      {!classic && !locked && !dead && uiPhase === 'playing' && (
+      <TouchButtons showBubble={showBubble} />
+      {!touchMode && !classic && !locked && !dead && uiPhase === 'playing' && (
         <div className="hud-lock-prompt">click to take control</div>
       )}
-      <div className="hud-controls">
-        {classic ? (
-          <>
-            <div>
-              <kbd>W</kbd>
-              <kbd>A</kbd>
-              <kbd>S</kbd>
-              <kbd>D</kbd> / arrows — move &nbsp;·&nbsp; <kbd>Shift</kbd> — sprint &nbsp;·&nbsp;{' '}
-              <kbd>Space</kbd> — jump &nbsp;·&nbsp; <kbd>F</kbd> —{' '}
-              {character === 'vince' ? 'spray' : 'throw'}
-            </div>
-            <div>
-              drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>Q</kbd> —
-              switch &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>P</kbd> — menu
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              mouse — steer &nbsp;·&nbsp; click — {character === 'vince' ? 'spray' : 'throw'}{' '}
-              &nbsp;·&nbsp; <kbd>W</kbd>
-              <kbd>S</kbd> — forward/back &nbsp;·&nbsp; <kbd>A</kbd>
-              <kbd>D</kbd> — strafe
-            </div>
-            <div>
-              <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
-              <kbd>Q</kbd> — switch legend &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp;{' '}
-              <kbd>P</kbd> — menu &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
-            </div>
-          </>
-        )}
-        {debugTools && <div className="hud-debug-hint">debug tools on — see the leva panels</div>}
-      </div>
+      {touchMode ? (
+        <div className="hud-controls touch">
+          <div>
+            stick — move · drag — look · pinch — zoom · hold{' '}
+            {character === 'vince' ? 'SPRAY' : 'THROW'} to attack
+          </div>
+          {debugTools && <div className="hud-debug-hint">debug tools on — see the leva panels</div>}
+        </div>
+      ) : (
+        <div className="hud-controls">
+          {classic ? (
+            <>
+              <div>
+                <kbd>W</kbd>
+                <kbd>A</kbd>
+                <kbd>S</kbd>
+                <kbd>D</kbd> / arrows — move &nbsp;·&nbsp; <kbd>Shift</kbd> — sprint &nbsp;·&nbsp;{' '}
+                <kbd>Space</kbd> — jump &nbsp;·&nbsp; <kbd>F</kbd> —{' '}
+                {character === 'vince' ? 'spray' : 'throw'}
+              </div>
+              <div>
+                drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>Q</kbd> —
+                switch &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>P</kbd> — menu
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                mouse — steer &nbsp;·&nbsp; click — {character === 'vince' ? 'spray' : 'throw'}{' '}
+                &nbsp;·&nbsp; <kbd>W</kbd>
+                <kbd>S</kbd> — forward/back &nbsp;·&nbsp; <kbd>A</kbd>
+                <kbd>D</kbd> — strafe
+              </div>
+              <div>
+                <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
+                <kbd>Q</kbd> — switch legend &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp;{' '}
+                <kbd>P</kbd> — menu &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
+              </div>
+            </>
+          )}
+          {debugTools && <div className="hud-debug-hint">debug tools on — see the leva panels</div>}
+        </div>
+      )}
     </div>
   );
 }

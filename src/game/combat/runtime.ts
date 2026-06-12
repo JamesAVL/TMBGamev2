@@ -20,4 +20,7 @@ export const runtime = {
   // Set when the control scheme flips mid-scene: the remounted player body
   // restores this position instead of the scene spawn.
   pendingReposition: null as { x: number; y: number; z: number } | null,
+  // Touch ATTACK button state — PlayerCombat's frame loop fires while held,
+  // so a hold auto-repeats at the weapon's own cooldown.
+  attackHeld: false,
 };

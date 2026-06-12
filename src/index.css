@@ -1,3 +1,12 @@
+/* Bangers (OFL) — the poster font; see CREDITS.md */
+@font-face {
+  font-family: 'Bangers';
+  src: url('/fonts/Bangers-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   font-family:
@@ -8,6 +17,7 @@
     Helvetica,
     Arial,
     sans-serif;
+  --display-font: 'Bangers', 'Comic Sans MS', system-ui, sans-serif;
 }
 
 * {
@@ -52,8 +62,9 @@ body,
 }
 
 .hud-title h1 {
-  font-size: 17px;
-  font-weight: 700;
+  font-family: var(--display-font);
+  font-size: 19px;
+  font-weight: 400;
   letter-spacing: 0.14em;
 }
 
@@ -89,6 +100,15 @@ body,
   border: 1px solid rgba(244, 241, 232, 0.25);
   border-bottom-width: 2px;
   border-radius: 4px;
+}
+
+/* Touch mode: the joystick owns the bottom-left corner — hint sits above it */
+.hud-controls.touch {
+  left: 14px;
+  bottom: 190px;
+  max-width: 210px;
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .hud-debug-hint {
@@ -175,8 +195,10 @@ body,
 }
 
 .hud-death h2 {
-  font-size: 56px;
-  letter-spacing: 0.22em;
+  font-family: var(--display-font);
+  font-weight: 400;
+  font-size: 60px;
+  letter-spacing: 0.18em;
   color: #9fd08a;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
 }
@@ -213,7 +235,8 @@ body,
 }
 
 .hud-boss-name {
-  font-size: 13px;
+  font-family: var(--display-font);
+  font-size: 16px;
   letter-spacing: 0.18em;
   margin-bottom: 5px;
 }
@@ -252,8 +275,9 @@ body,
   width: max-content;
   max-width: 92vw;
   text-align: center;
-  font-size: clamp(22px, 4vw, 40px);
-  letter-spacing: 0.3em;
+  font-family: var(--display-font);
+  font-size: clamp(24px, 4.4vw, 44px);
+  letter-spacing: 0.24em;
   color: #9fd08a;
   text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
   animation: banner-fade 4.5s ease-in forwards;
@@ -355,8 +379,9 @@ body,
 }
 
 .hud-skills h3 {
-  font-size: 24px;
-  letter-spacing: 0.32em;
+  font-family: var(--display-font);
+  font-size: 28px;
+  letter-spacing: 0.26em;
   color: #ffd76e;
 }
 
@@ -695,8 +720,10 @@ body,
 
 .title-card h1 {
   margin: 10px 0 8px;
-  font-size: clamp(34px, 6vw, 64px);
-  letter-spacing: 0.18em;
+  font-family: var(--display-font);
+  font-weight: 400;
+  font-size: clamp(40px, 7vw, 76px);
+  letter-spacing: 0.14em;
   line-height: 1.1;
   text-shadow: 0 4px 30px rgba(216, 79, 154, 0.45);
 }
@@ -773,8 +800,9 @@ button.title-danger {
 
 .pause-card h3 {
   text-align: center;
-  font-size: 20px;
-  letter-spacing: 0.32em;
+  font-family: var(--display-font);
+  font-size: 24px;
+  letter-spacing: 0.26em;
   color: #ffd76e;
   margin-bottom: 18px;
 }
@@ -897,4 +925,71 @@ button.title-danger {
   border-radius: 999px;
   padding: 7px 22px;
   cursor: pointer;
+}
+
+/* Touch overlay buttons (bottom-right; ecctrl's joystick holds bottom-left) */
+.touch-controls {
+  position: absolute;
+  right: 14px;
+  bottom: 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.touch-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.touch-btn {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  display: grid;
+  place-items: center;
+  font-family: inherit;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #f4f1e8;
+  background: rgba(11, 13, 20, 0.5);
+  border: 1px solid rgba(244, 241, 232, 0.4);
+  border-radius: 50%;
+  backdrop-filter: blur(2px);
+}
+
+.touch-btn:active {
+  background: rgba(255, 215, 110, 0.3);
+  border-color: #ffd76e;
+}
+
+.touch-btn.small {
+  width: 58px;
+  height: 58px;
+  font-size: 10px;
+}
+
+.touch-btn.talk {
+  color: #ffb070;
+  border-color: rgba(255, 176, 112, 0.7);
+}
+
+.touch-btn.jump {
+  width: 74px;
+  height: 74px;
+  font-size: 12px;
+}
+
+.touch-btn.attack {
+  width: 96px;
+  height: 96px;
+  font-size: 14px;
+  color: #ffd76e;
+  background: rgba(255, 215, 110, 0.16);
+  border: 2px solid rgba(255, 215, 110, 0.65);
 }
