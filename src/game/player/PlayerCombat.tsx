@@ -15,7 +15,7 @@ import { movementConfig } from './movementConfig';
 
 const SPRAY_COOLDOWN = 0.45; // × stats.cooldownMult
 const SPRAY_RANGE = 2.6; // × Wide Nozzle's rangeMult
-const POINT_BLANK = 1.1; // inside this, the cone angle is forgiven
+const POINT_BLANK = 1.3; // inside this, the cone angle is forgiven
 const SPRAY_BASE_HALF_ANGLE = 55; // degrees, + Wide Nozzle
 const SPRAY_LIFETIME = 0.16;
 const RECORD_COOLDOWN = 0.6; // × stats.cooldownMult
@@ -100,7 +100,9 @@ export function PlayerCombat() {
       let killed = false;
       let immune = false;
       let anyCrit = false;
+      const combat = useCombatStore.getState();
       for (const [id, body] of runtime.enemyBodies) {
+        if (!combat.enemies[id]?.alive) continue; // never touch a stale handle
         const t = body.translation();
         toEnemy.set(t.x - p.x, 0, t.z - p.z);
         const dist = toEnemy.length();
@@ -108,7 +110,8 @@ export function PlayerCombat() {
         toEnemy.normalize();
         // point-blank always connects — the angle test is unfair at touching range
         if (dist > POINT_BLANK && toEnemy.dot(forward) < halfAngleCos) continue;
-        const r = strike(id, can.damage, 3, toEnemy);
+        // softer knockback on sprays so follow-up hits still connect
+        const r = strike(id, can.damage, 2.2, toEnemy);
         connected ||= r.connected;
         killed ||= r.killed;
         immune ||= r.immune;
@@ -280,8 +283,9 @@ export function PlayerCombat() {
       for (const mist of mists) {
         while (now >= mist.nextTick && now < mist.until) {
           mist.nextTick += MIST_TICK;
+          const combat = useCombatStore.getState();
           for (const [id, body] of runtime.enemyBodies) {
-            if (!body.isEnabled()) continue;
+            if (!combat.enemies[id]?.alive || !body.isEnabled()) continue;
             const t = body.translation();
             toEnemy.set(t.x - mist.x, 0, t.z - mist.z);
             if (toEnemy.length() > MIST_RADIUS) continue;

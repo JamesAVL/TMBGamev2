@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type * as THREE from 'three';
 import { ENEMY_HIT_RADIUS, POOL_SIZE, projectileSlots, TARGET_HIT_RADIUS } from './projectilePool';
+import { useCombatStore } from '../../stores/combatStore';
 import { runtime } from './runtime';
 
 // Howard's jazz records (and any future projectile — the Moon will want
@@ -32,8 +33,9 @@ export function Projectiles() {
       slot.traveled += step;
 
       // collide with enemies (piercing discs strike each enemy once)
+      const enemies = useCombatStore.getState().enemies;
       for (const [id, body] of runtime.enemyBodies) {
-        if (!body.isEnabled() || slot.hitIds.has(id)) continue;
+        if (!enemies[id]?.alive || !body.isEnabled() || slot.hitIds.has(id)) continue;
         const t = body.translation();
         const ddx = t.x - slot.x;
         const ddz = t.z - slot.z;
