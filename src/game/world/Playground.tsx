@@ -2,7 +2,6 @@ import { Grid } from '@react-three/drei';
 import { RigidBody } from '@react-three/rapier';
 import { useSceneStore } from '../../stores/sceneStore';
 import { Block } from './Block';
-import { CharacterPads } from './CharacterPads';
 import { Portal } from './Portal';
 
 // Step 1 greybox: every fixture exists to make one aspect of movement feel
@@ -138,9 +137,6 @@ export function Playground() {
       <Block size={[0.5, 0.5, 0.5]} position={[3, 1.25, 3]} color="#bd8a62" />
       <Block size={[0.5, 0.5, 0.5]} position={[-3, 0.25, 4]} color="#bd8a62" />
       <Block size={[1, 4, 1]} position={[-5, 2, -3]} color="#a8744f" />
-
-      {/* Dressing-room pads: pick your legend */}
-      <CharacterPads />
 
       {/* The door to the Tundra — framed in glacier ice, humming quietly */}
       <Block size={[1, 3.4, 1]} position={[-2.4, 1.7, 22]} color="#9fc4dd" />

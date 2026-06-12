@@ -1,15 +1,17 @@
 import { create } from 'zustand';
 
-// Who you're playing. Chosen on the greybox dressing pads for now; the hub
-// wardrobe will own (and persist) this later.
+// The legends travel together. `character` is whoever you're controlling;
+// Q swaps. The other follows (and never fights — that's your job).
 export type CharacterId = 'vince' | 'howard';
 
 type ProfileState = {
   character: CharacterId;
   setCharacter: (character: CharacterId) => void;
+  switchCharacter: () => void;
 };
 
 export const useProfileStore = create<ProfileState>()((set) => ({
   character: 'vince',
   setCharacter: (character) => set({ character }),
+  switchCharacter: () => set((s) => ({ character: s.character === 'vince' ? 'howard' : 'vince' })),
 }));

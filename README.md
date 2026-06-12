@@ -5,17 +5,19 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
-**Step 4+ — Skills, two legends, and the pack**: play as **Vince** (hairspray
-cone of weaponised glamour) or **Howard** (thrown jazz records) — swap on the
-dressing pads near spawn. Level-ups bank skill points; press **T** to spend
-them across eight Boosh-flavoured skills (damage, attack speed, max hp, move
-speed, reach, crit, jump, regen) with soft-capped stacking. The greybox range
-is patrolled by **Mod Wolves** (the Hitcher is benched, destined for boss
-billing). THE TUNDRA run: Parka People waves, the Black Frost (break his
-composure with brazier embers — records work too), then claim the Egg of
-Mantumbi. All audio is synthesized Web Audio and all art is original
-primitives — no third-party assets yet. Lore reference: the Mighty Boosh
-fandom wiki; all dialogue is original.
+**The Duo update**: Vince and Howard travel together — press **Q** to switch
+who you control (with banter); the other follows loyally and stays out of the
+scrap. Boss fights lock the switch. **Vince** sprays a glitter cone (skills:
+Extra Hold lingering mist, Wide Nozzle); **Howard** throws jazz records
+(skills: Rare Pressing — gold, double damage, pierces; Strong Arm). Level-ups
+bank skill points; press **T** to spend them across shared and per-legend
+skills with soft-capped stacking. The greybox range is patrolled by **Mod
+Wolves** — upright gents in navy suits, pocket squares, and wolf heads. THE
+TUNDRA run: Parka People waves, the Black Frost (break his composure with
+brazier embers — records work too), then claim the Egg of Mantumbi. All audio
+is synthesized Web Audio and all art is original primitives — no third-party
+assets yet. Lore reference: the Mighty Boosh fandom wiki; all dialogue is
+original.
 
 ## Prerequisites
 
