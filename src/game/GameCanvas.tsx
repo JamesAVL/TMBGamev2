@@ -17,10 +17,13 @@ import { Player } from './player/Player';
 import { SceneManager } from './SceneManager';
 import { Lights } from './world/Lights';
 import { Playground } from './world/Playground';
-import { TundraRealm } from './world/tundra/TundraRealm';
 
 // Lazy so r3f-perf (and its nested drei copy) code-splits out of the normal path.
 const Perf = lazy(() => import('r3f-perf').then((m) => ({ default: m.Perf })));
+// The realm code-splits too: the greybox boots lighter, tundra loads on entry.
+const TundraRealm = lazy(() =>
+  import('./world/tundra/TundraRealm').then((m) => ({ default: m.TundraRealm })),
+);
 
 export function GameCanvas() {
   // Called unconditionally (hook rules); with the leva root hidden the

@@ -3,6 +3,7 @@ import { CLASSIC_CONTROLS } from '../debug/flags';
 import { sfx } from '../audio/sfx';
 import {
   BOSS_LOCK_LINE,
+  COMPOSURE_HINTS,
   KILL_QUIPS,
   LOW_HP_QUIPS,
   OFFSCREEN_QUIPS,
@@ -162,6 +163,7 @@ export function Hud() {
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
       if (e.code === 'KeyT') {
+        if (usePlayerStore.getState().dead) return; // no spending from beyond
         const run = useRunStore.getState();
         const opening = !run.panelOpen;
         run.setPanelOpen(opening);
@@ -222,6 +224,25 @@ export function Hud() {
       const absent = useProfileStore.getState().character === 'vince' ? 'howard' : 'vince';
       const line = pick(KILL_QUIPS[absent]);
       if (line) showBubble(line);
+    });
+  }, [showBubble]);
+
+  // Level-up is unambiguous: a point banked, and where to spend it.
+  useEffect(() => {
+    return useRunStore.subscribe((s, prev) => {
+      if (s.level > prev.level) showBubble('+1 skill point — press T to spend it', 2400);
+    });
+  }, [showBubble]);
+
+  // Hits clinking off the boss's composure → the absent legend explains.
+  useEffect(() => {
+    let lastHintAt = 0;
+    return useCombatStore.subscribe((s, prev) => {
+      if (s.lastImmuneHitAt === prev.lastImmuneHitAt) return;
+      if (Date.now() - lastHintAt < 20000) return;
+      lastHintAt = Date.now();
+      const absent = useProfileStore.getState().character === 'vince' ? 'howard' : 'vince';
+      showBubble(COMPOSURE_HINTS[absent], 3400);
     });
   }, [showBubble]);
 

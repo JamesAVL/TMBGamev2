@@ -14,8 +14,8 @@ import { PlayerModel } from './PlayerModel';
 export function Player() {
   // Run upgrades scale movement; Ecctrl re-renders with new props on pick
   // (rare), and its frame loop reads the latest values.
-  const speedMult = useRunStore((s) => s.stats.speedMult);
-  const jumpMult = useRunStore((s) => s.stats.jumpMult);
+  const speedMult = useRunStore((s) => s.stats.shared.speedMult);
+  const jumpMult = useRunStore((s) => s.stats.shared.jumpMult);
   return (
     <Ecctrl
       ref={(handle) => {

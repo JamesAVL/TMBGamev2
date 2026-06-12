@@ -1,17 +1,12 @@
-// Skill-point progression: each level-up banks a point; points are spent
-// freely (T panel) on multi-point skills. Shared skills serve both legends;
-// each weapon has its own branch. Percentages use the brief's soft-cap form
-// (x / (x + k)) so nothing runs away.
+// Skill-point progression, consolidated: 4 shared body skills + 2 fat
+// multi-stat weapon skills per legend. Percentages use the brief's soft-cap
+// form (x / (x + k)) where stacking could run away.
 import type { EnemyKind } from '../../stores/combatStore';
 import type { CharacterId } from '../../stores/profileStore';
 
 export type SkillId =
-  | 'biggerBackhand'
-  | 'quickWrists'
   | 'shamansFlask'
   | 'eelGrease'
-  | 'ganglyReach'
-  | 'sequinEdge'
   | 'moonBoots'
   | 'poloDiscipline'
   | 'extraHold'
@@ -39,22 +34,6 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 export const SKILLS: SkillDef[] = [
   // ---- shared: the body beneath the outfit ----
   {
-    id: 'biggerBackhand',
-    owner: 'shared',
-    name: 'Bigger Backhand',
-    blurb: 'Technically jazz percussion.',
-    maxPoints: 5,
-    valueLabel: (n) => `${(1 + 0.35 * n).toFixed(2)}× damage`,
-  },
-  {
-    id: 'quickWrists',
-    owner: 'shared',
-    name: 'Quick Wrists',
-    blurb: 'Honed on vintage zips.',
-    maxPoints: 5,
-    valueLabel: (n) => `−${pct(softCap(n, 0.5, 1.8))} cooldown`,
-  },
-  {
     id: 'shamansFlask',
     owner: 'shared',
     name: "Shaman's Flask",
@@ -69,22 +48,6 @@ export const SKILLS: SkillDef[] = [
     blurb: 'Slippery when applied liberally.',
     maxPoints: 5,
     valueLabel: (n) => `+${pct(softCap(n, 0.45, 2.5))} speed`,
-  },
-  {
-    id: 'ganglyReach',
-    owner: 'shared',
-    name: 'Gangly Reach',
-    blurb: 'Unsettling. Useful.',
-    maxPoints: 5,
-    valueLabel: (n) => `+${pct(softCap(n, 0.5, 3))} reach`,
-  },
-  {
-    id: 'sequinEdge',
-    owner: 'shared',
-    name: 'Sequin Edge',
-    blurb: 'Suddenly, fashion.',
-    maxPoints: 5,
-    valueLabel: (n) => `${pct(softCap(n, 0.55, 2.6))} crit`,
   },
   {
     id: 'moonBoots',
@@ -107,17 +70,18 @@ export const SKILLS: SkillDef[] = [
     id: 'extraHold',
     owner: 'vince',
     name: 'Extra Hold',
-    blurb: 'The mist remembers.',
-    maxPoints: 3,
-    valueLabel: (n) => (n === 0 ? 'no linger' : `mist lingers ${(0.2 + 0.8 * n).toFixed(1)}s`),
+    blurb: 'Stronger formula. The mist remembers.',
+    maxPoints: 4,
+    valueLabel: (n) =>
+      `${(1 + 0.3 * n).toFixed(2)}× damage` + (n > 0 ? `, mist ${(0.6 * n).toFixed(1)}s` : ''),
   },
   {
     id: 'wideNozzle',
     owner: 'vince',
     name: 'Wide Nozzle',
     blurb: 'Coverage is a lifestyle.',
-    maxPoints: 3,
-    valueLabel: (n) => `+${12 * n}° cone, +${pct(0.08 * n)} spray range`,
+    maxPoints: 4,
+    valueLabel: (n) => `+${10 * n}° cone, +${pct(0.1 * n)} range, −${pct(0.1 * n)} cooldown`,
   },
   // ---- Howard: the collection ----
   {
@@ -125,56 +89,72 @@ export const SKILLS: SkillDef[] = [
     owner: 'howard',
     name: 'Rare Pressing',
     blurb: 'Mint condition. Devastating.',
-    maxPoints: 3,
+    maxPoints: 4,
     valueLabel: (n) =>
-      n === 0 ? 'no rare pressings' : `${pct(0.12 * n)} chance: 2× damage, pierces`,
+      `${(1 + 0.25 * n).toFixed(2)}× damage` +
+      (n > 0 ? `, ${pct(0.12 * n)} gold (2×, pierces)` : ''),
   },
   {
     id: 'strongArm',
     owner: 'howard',
     name: 'Strong Arm',
     blurb: 'Years of crate digging.',
-    maxPoints: 3,
-    valueLabel: (n) => `+${pct(0.2 * n)} throw speed, +${pct(0.1 * n)} range`,
+    maxPoints: 4,
+    valueLabel: (n) =>
+      `+${pct(0.15 * n)} speed, +${pct(0.12 * n)} range, −${pct(0.1 * n)} cooldown`,
   },
 ];
 
 export type RunStats = {
-  speedMult: number;
-  jumpMult: number;
-  damage: number;
-  cooldownMult: number;
-  rangeMult: number;
-  critChance: number;
-  regenInterval: number; // seconds per hp; 0 = off
-  // Vince
-  sprayLingerSeconds: number; // 0 = off
-  sprayArcBonusDeg: number;
-  sprayRangeBonus: number;
-  // Howard
-  rareChance: number;
-  throwSpeedMult: number;
-  throwRangeBonus: number;
-  throwKnockbackBonus: number;
+  shared: {
+    speedMult: number;
+    jumpMult: number;
+    regenInterval: number; // seconds per hp; 0 = off
+  };
+  vince: {
+    damage: number;
+    cooldownMult: number;
+    rangeMult: number;
+    arcBonusDeg: number;
+    lingerSeconds: number; // 0 = off
+  };
+  howard: {
+    damage: number;
+    cooldownMult: number;
+    rangeMult: number;
+    speedMult: number;
+    knockbackBonus: number;
+    rareChance: number;
+  };
 };
+
+// Crits stay in the game as flat juice, not a stat — Rare Pressing is
+// Howard's crit; Vince's mist is his.
+export const BASE_CRIT = 0.08;
 
 export function computeStats(points: SkillPoints): RunStats {
   const n = (id: SkillId) => points[id] ?? 0;
   return {
-    speedMult: 1 + softCap(n('eelGrease'), 0.45, 2.5),
-    jumpMult: 1 + 0.15 * n('moonBoots'),
-    damage: 1 + 0.35 * n('biggerBackhand'),
-    cooldownMult: 1 - softCap(n('quickWrists'), 0.5, 1.8),
-    rangeMult: 1 + softCap(n('ganglyReach'), 0.5, 3),
-    critChance: softCap(n('sequinEdge'), 0.55, 2.6),
-    regenInterval: n('poloDiscipline') === 0 ? 0 : 16 / n('poloDiscipline'),
-    sprayLingerSeconds: n('extraHold') === 0 ? 0 : 0.2 + 0.8 * n('extraHold'),
-    sprayArcBonusDeg: 12 * n('wideNozzle'),
-    sprayRangeBonus: 0.08 * n('wideNozzle'),
-    rareChance: 0.12 * n('rarePressing'),
-    throwSpeedMult: 1 + 0.2 * n('strongArm'),
-    throwRangeBonus: 0.1 * n('strongArm'),
-    throwKnockbackBonus: n('strongArm'),
+    shared: {
+      speedMult: 1 + softCap(n('eelGrease'), 0.45, 2.5),
+      jumpMult: 1 + 0.15 * n('moonBoots'),
+      regenInterval: n('poloDiscipline') === 0 ? 0 : 16 / n('poloDiscipline'),
+    },
+    vince: {
+      damage: 1 + 0.3 * n('extraHold'),
+      cooldownMult: 1 - 0.1 * n('wideNozzle'),
+      rangeMult: 1 + 0.1 * n('wideNozzle'),
+      arcBonusDeg: 10 * n('wideNozzle'),
+      lingerSeconds: 0.6 * n('extraHold'),
+    },
+    howard: {
+      damage: 1 + 0.25 * n('rarePressing'),
+      cooldownMult: 1 - 0.1 * n('strongArm'),
+      rangeMult: 1 + 0.12 * n('strongArm'),
+      speedMult: 1 + 0.15 * n('strongArm'),
+      knockbackBonus: 0.5 * n('strongArm'),
+      rareChance: 0.12 * n('rarePressing'),
+    },
   };
 }
 

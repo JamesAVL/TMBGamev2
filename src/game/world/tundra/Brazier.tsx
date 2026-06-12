@@ -13,7 +13,7 @@ const FLARE_COOLDOWN = 8;
 const FLARE_AOE = 3.5;
 const HEAL_RANGE = 2.5;
 const HEAL_INTERVAL = 2; // 1 hp every 2s of standing in the warmth
-const BOSS_BREAK_RANGE = 4.5;
+const BOSS_BREAK_RANGE = 6;
 const BOSS_VULNERABLE_FOR = 4;
 
 // Warmth in the waste. Stand close to slowly heal; swipe it to burst embers —
@@ -95,30 +95,48 @@ export function Brazier({
       if (combat.enemies['blackfrost']?.alive) combat.setInvulnerable('blackfrost', true);
     }
 
-    // Fire light flicker
-    if (lightRef.current) {
-      const base = flaring ? 9 : cooling ? 0.7 : 2.6;
-      lightRef.current.intensity =
-        base + Math.sin(state.clock.elapsedTime * 11 + position[0]) * base * 0.18;
-    }
-    if (coalsRef.current) {
-      coalsRef.current.emissiveIntensity = flaring ? 4 : cooling ? 0.35 : 1.4;
+    // Stage braziers signal when the boss is in ember range: coals go ice-blue
+    let bossInRange = false;
+    if (bossLink) {
+      const combat = useCombatStore.getState();
+      const boss = runtime.enemyBodies.get('blackfrost');
+      const entry = combat.enemies['blackfrost'];
+      if (boss && entry?.alive && entry.aggro) {
+        const bt = boss.translation();
+        const bdx = bt.x - position[0];
+        const bdz = bt.z - position[2];
+        bossInRange = bdx * bdx + bdz * bdz < BOSS_BREAK_RANGE * BOSS_BREAK_RANGE;
+      }
     }
 
-    // Warmth heals
-    const body = runtime.player?.group;
-    if (body && !usePlayerStore.getState().dead) {
-      const t = body.translation();
-      const dx = t.x - position[0];
-      const dz = t.z - position[2];
-      if (dx * dx + dz * dz < HEAL_RANGE * HEAL_RANGE) {
-        healAcc.current += delta;
-        if (healAcc.current >= HEAL_INTERVAL) {
+    // Fire light flicker
+    if (lightRef.current) {
+      const base = flaring ? 9 : cooling ? 0.7 : bossInRange ? 4 : 2.6;
+      lightRef.current.intensity =
+        base + Math.sin(state.clock.elapsedTime * 11 + position[0]) * base * 0.18;
+      lightRef.current.color.set(bossInRange && !cooling ? '#7fd4ff' : '#ff9a40');
+    }
+    if (coalsRef.current) {
+      coalsRef.current.emissiveIntensity = flaring ? 4 : cooling ? 0.35 : bossInRange ? 2.6 : 1.4;
+      coalsRef.current.emissive.set(bossInRange && !cooling ? '#7fd4ff' : '#ff7a30');
+    }
+
+    // Warmth heals — but the boss-stage braziers are tools, not treatment
+    if (!bossLink) {
+      const body = runtime.player?.group;
+      if (body && !usePlayerStore.getState().dead) {
+        const t = body.translation();
+        const dx = t.x - position[0];
+        const dz = t.z - position[2];
+        if (dx * dx + dz * dz < HEAL_RANGE * HEAL_RANGE) {
+          healAcc.current += delta;
+          if (healAcc.current >= HEAL_INTERVAL) {
+            healAcc.current = 0;
+            usePlayerStore.getState().heal(1);
+          }
+        } else {
           healAcc.current = 0;
-          usePlayerStore.getState().heal(1);
         }
-      } else {
-        healAcc.current = 0;
       }
     }
   });

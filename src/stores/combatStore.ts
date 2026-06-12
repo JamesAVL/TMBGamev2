@@ -31,6 +31,7 @@ export type EnemyEntry = {
 type CombatState = {
   enemies: Record<string, EnemyEntry>;
   lastAttackAt: number; // player's last swipe, drives the arc visual
+  lastImmuneHitAt: number; // a hit clinked off composure — the HUD hints off it
   hitStopActive: boolean; // brief physics freeze on connect, for punch
   setEnemies: (defs: EnemySpawnDef[]) => void; // replace all (scene change)
   spawnEnemies: (defs: EnemySpawnDef[]) => void; // merge in (waves)
@@ -62,6 +63,7 @@ function entryFromDef(def: EnemySpawnDef): EnemyEntry {
 export const useCombatStore = create<CombatState>()((set, get) => ({
   enemies: {},
   lastAttackAt: -Infinity,
+  lastImmuneHitAt: -Infinity,
   hitStopActive: false,
   setEnemies: (defs) =>
     set({ enemies: Object.fromEntries(defs.map((d) => [d.id, entryFromDef(d)])) }),
@@ -76,7 +78,10 @@ export const useCombatStore = create<CombatState>()((set, get) => ({
   damageEnemy: (id, amount) => {
     const e = get().enemies[id];
     if (!e || !e.alive) return 'none';
-    if (e.invulnerable) return 'immune';
+    if (e.invulnerable) {
+      set({ lastImmuneHitAt: runtime.time });
+      return 'immune';
+    }
     const now = runtime.time;
     const hp = Math.max(0, e.hp - amount);
     const alive = hp > 0;

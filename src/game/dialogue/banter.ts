@@ -23,38 +23,35 @@ export const SWITCH_LINES: Record<CharacterId, string[]> = {
 // Ambient quips from the absent one (keyed by who's ABSENT), every so often.
 export const OFFSCREEN_QUIPS: Record<CharacterId, string[]> = {
   howard: [
-    'HOWARD (off): Lead with the shoulder. The jazz shoulder.',
-    'HOWARD (off): I’m cataloguing. Shout if it’s urgent.',
-    'HOWARD (off): Technique, Vince. Technique.',
-    'HOWARD (off): Every record you waste is a small funeral.',
+    'HOWARD: Lead with the shoulder. The jazz shoulder.',
+    'HOWARD: I’m cataloguing. Shout if it’s urgent.',
+    'HOWARD: Technique, Vince. Technique.',
+    'HOWARD: Every record you waste is a small funeral.',
   ],
   vince: [
-    'VINCE (off): You look well mad right now. Love it.',
-    'VINCE (off): I’m doing my fringe. Two minutes.',
-    'VINCE (off): Throw it like a frisbee from the future!',
-    'VINCE (off): This biome’s got terrible lighting for my skin tone.',
+    'VINCE: You look well mad right now. Love it.',
+    'VINCE: I’m doing my fringe. Two minutes.',
+    'VINCE: Throw it like a frisbee from the future!',
+    'VINCE: This biome’s got terrible lighting for my skin tone.',
   ],
 };
 
 // The absent one heckles when you're nearly dead (once per scrape).
 export const LOW_HP_QUIPS: Record<CharacterId, string[]> = {
   howard: [
-    'HOWARD (off): Stop being hit, Vince. It’s basic.',
-    'HOWARD (off): Breathe through it. Jazz men don’t die embarrassed.',
+    'HOWARD: Stop being hit, Vince. It’s basic.',
+    'HOWARD: Breathe through it. Jazz men don’t die embarrassed.',
   ],
   vince: [
-    'VINCE (off): Howard! Your face is leaking. Sort it out.',
-    'VINCE (off): Don’t die — I can’t carry the Egg AND your hat.',
+    'VINCE: Howard! Your face is leaking. Sort it out.',
+    'VINCE: Don’t die — I can’t carry the Egg AND your hat.',
   ],
 };
 
 // Occasional approval on a kill (keyed by who's ABSENT).
 export const KILL_QUIPS: Record<CharacterId, string[]> = {
-  howard: ['HOWARD (off): Acceptable. Barely.', 'HOWARD (off): Sloppy footwork. Good outcome.'],
-  vince: [
-    'VINCE (off): Ooh, that was glam as anything.',
-    'VINCE (off): Do that one again when I’m watching.',
-  ],
+  howard: ['HOWARD: Acceptable. Barely.', 'HOWARD: Sloppy footwork. Good outcome.'],
+  vince: ['VINCE: Ooh, that was glam as anything.', 'VINCE: Do that one again when I’m watching.'],
 };
 
 // One exchange per realm entry, picked at random.
@@ -74,3 +71,10 @@ export const TUNDRA_ENTRY_EXCHANGES: [string, string][] = [
 ];
 
 export const BOSS_LOCK_LINE = 'STAGE MANAGER: No swaps mid-set.';
+
+// The absent legend explains the composure mechanic when hits keep clinking
+// off (keyed by who's ABSENT).
+export const COMPOSURE_HINTS: Record<CharacterId, string> = {
+  howard: 'HOWARD: His composure is holding! The braziers — embers break it. Lure him close.',
+  vince: 'VINCE: He’s not even bothered! Smack a brazier when he’s near it — embers mess him up.',
+};

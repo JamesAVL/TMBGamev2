@@ -10,7 +10,9 @@ type PlayerState = {
   dead: boolean;
   hitCount: number; // increments every hit taken — keys the damage-flash animation
   lastDamagedAt: number;
+  frozenUntil: number; // game-clock time; the Black Frost's signature
   damagePlayer: (amount: number) => void;
+  freezePlayer: (seconds: number) => void;
   heal: (amount: number) => void;
   addMaxHp: (amount: number) => void;
   clearMaxHpBonus: () => void;
@@ -23,12 +25,18 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   dead: false,
   hitCount: 0,
   lastDamagedAt: -Infinity,
+  frozenUntil: 0,
   damagePlayer: (amount) => {
     const s = get();
     const now = runtime.time;
     if (s.dead || now - s.lastDamagedAt < INVULN_SECONDS) return;
     const hp = Math.max(0, s.hp - amount);
     set({ hp, dead: hp === 0, hitCount: s.hitCount + 1, lastDamagedAt: now });
+  },
+  freezePlayer: (seconds) => {
+    const s = get();
+    if (s.dead) return;
+    set({ frozenUntil: Math.max(s.frozenUntil, runtime.time + seconds) });
   },
   heal: (amount) => {
     const s = get();
