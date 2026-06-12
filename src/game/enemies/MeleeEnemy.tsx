@@ -103,7 +103,7 @@ export function MeleeEnemy({
     const body = bodyRef.current;
     const group = groupRef.current;
     if (!entry || !body || !group) return;
-    const now = performance.now() / 1000;
+    const now = runtime.time;
     const home = entry.spawn;
 
     // ---- dead: shrink out; respawn at home only if this enemy respawns ----

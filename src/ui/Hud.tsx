@@ -1,8 +1,65 @@
+import { useEffect } from 'react';
 import { CLASSIC_CONTROLS } from '../debug/flags';
+import { UPGRADES, type UpgradeId } from '../game/progression/upgrades';
 import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
+import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { usePointerLock } from './usePointerLock';
+
+function XpBar() {
+  const xp = useRunStore((s) => s.xp);
+  const xpToNext = useRunStore((s) => s.xpToNext);
+  const level = useRunStore((s) => s.level);
+  return (
+    <div className="hud-xp">
+      <span className="hud-xp-level">{level + 1}</span>
+      <div className="hud-xp-track">
+        <div className="hud-xp-fill" style={{ width: `${(xp / xpToNext) * 100}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function PickModal() {
+  const pending = useRunStore((s) => s.pendingChoices);
+
+  // Free the mouse for the pick; the chosen card's click (a user gesture)
+  // re-locks it so play resumes seamlessly.
+  useEffect(() => {
+    if (pending) document.exitPointerLock();
+  }, [pending]);
+
+  if (!pending) return null;
+
+  const pick = (id: UpgradeId) => {
+    useRunStore.getState().choosePick(id);
+    if (!CLASSIC_CONTROLS) {
+      const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
+      canvas?.requestPointerLock();
+    }
+  };
+
+  return (
+    <div className="hud-pick">
+      <h3>LEVEL UP</h3>
+      <p>choose one — the run remembers</p>
+      <div className="hud-pick-cards">
+        {pending.map((id) => {
+          const def = UPGRADES.find((u) => u.id === id);
+          if (!def) return null;
+          return (
+            <button key={id} className="hud-pick-card" onClick={() => pick(id)}>
+              <span className="hud-pick-name">{def.name}</span>
+              <span className="hud-pick-blurb">{def.blurb}</span>
+              <span className="hud-pick-effect">{def.effect}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 function BossBar() {
   const boss = useCombatStore((s) => s.enemies['blackfrost']);
@@ -44,6 +101,8 @@ export function Hud() {
       </div>
       {objective && <div className="hud-objective">{objective}</div>}
       <BossBar />
+      <XpBar />
+      <PickModal />
       <div className="hud-hp" aria-label={`health ${hp} of ${maxHp}`}>
         {Array.from({ length: maxHp }, (_, i) => (
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />

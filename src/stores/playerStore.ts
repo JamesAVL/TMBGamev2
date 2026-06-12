@@ -1,28 +1,31 @@
 import { create } from 'zustand';
+import { runtime } from '../game/combat/runtime';
 
-const MAX_HP = 5;
+const BASE_HP = 5;
 const INVULN_SECONDS = 0.6; // i-frames so overlapping strikes don't double-hit
 
 type PlayerState = {
   hp: number;
-  maxHp: number;
+  maxHp: number; // BASE_HP + run bonuses (Shaman's Flask); reset with the run
   dead: boolean;
   hitCount: number; // increments every hit taken — keys the damage-flash animation
   lastDamagedAt: number;
   damagePlayer: (amount: number) => void;
   heal: (amount: number) => void;
+  addMaxHp: (amount: number) => void;
+  clearMaxHpBonus: () => void;
   respawnPlayer: () => void;
 };
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
-  hp: MAX_HP,
-  maxHp: MAX_HP,
+  hp: BASE_HP,
+  maxHp: BASE_HP,
   dead: false,
   hitCount: 0,
   lastDamagedAt: -Infinity,
   damagePlayer: (amount) => {
     const s = get();
-    const now = performance.now() / 1000;
+    const now = runtime.time;
     if (s.dead || now - s.lastDamagedAt < INVULN_SECONDS) return;
     const hp = Math.max(0, s.hp - amount);
     set({ hp, dead: hp === 0, hitCount: s.hitCount + 1, lastDamagedAt: now });
@@ -32,5 +35,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (s.dead || s.hp >= s.maxHp) return;
     set({ hp: Math.min(s.maxHp, s.hp + amount) });
   },
-  respawnPlayer: () => set({ hp: MAX_HP, dead: false }),
+  addMaxHp: (amount) => set((s) => ({ maxHp: s.maxHp + amount })),
+  clearMaxHpBonus: () => set((s) => ({ maxHp: BASE_HP, hp: Math.min(s.hp, BASE_HP) })),
+  respawnPlayer: () => set((s) => ({ hp: s.maxHp, dead: false })),
 }));

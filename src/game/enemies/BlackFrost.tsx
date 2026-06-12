@@ -113,7 +113,7 @@ export function BlackFrost() {
     const body = bodyRef.current;
     const group = groupRef.current;
     if (!entry || !body || !group) return;
-    const now = performance.now() / 1000;
+    const now = runtime.time;
 
     // register lazily (mounted only when the boss phase spawns him)
     if (!runtime.enemyBodies.has(ID)) runtime.enemyBodies.set(ID, body);

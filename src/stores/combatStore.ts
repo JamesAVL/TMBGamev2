@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { runtime } from '../game/combat/runtime';
 
 export type EnemyKind = 'hitcher' | 'parka' | 'blackfrost';
 
@@ -71,12 +72,12 @@ export const useCombatStore = create<CombatState>()((set, get) => ({
         ...Object.fromEntries(defs.map((d) => [d.id, entryFromDef(d)])),
       },
     }),
-  registerAttack: () => set({ lastAttackAt: performance.now() / 1000 }),
+  registerAttack: () => set({ lastAttackAt: runtime.time }),
   damageEnemy: (id, amount) => {
     const e = get().enemies[id];
     if (!e || !e.alive) return 'none';
     if (e.invulnerable) return 'immune';
-    const now = performance.now() / 1000;
+    const now = runtime.time;
     const hp = Math.max(0, e.hp - amount);
     const alive = hp > 0;
     set({

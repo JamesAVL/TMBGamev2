@@ -5,10 +5,12 @@ import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
 import { DEBUG } from '../debug/flags';
 import { useCombatStore } from '../stores/combatStore';
+import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { keyboardMap } from './controls';
 import { Effects } from './Effects';
 import { Enemies } from './enemies/Enemies';
+import { GameClock } from './GameClock';
 import { PointerLockOnClick } from './PointerLockOnClick';
 import { Player } from './player/Player';
 import { SceneManager } from './SceneManager';
@@ -29,8 +31,10 @@ export function GameCanvas() {
     // which follows the raw body position); fixed 1/60 is the alternative.
     fixedTimestep: false,
   });
-  // Brief freeze-frame when a swipe connects — cheap, very effective punch
+  // Brief freeze-frame when a swipe connects — cheap, very effective punch.
+  // Level-up picks pause the whole sim until a card is chosen.
   const hitStop = useCombatStore((s) => s.hitStopActive);
+  const pendingPick = useRunStore((s) => s.pendingChoices !== null);
   const scene = useSceneStore((s) => s.scene);
 
   return (
@@ -64,9 +68,10 @@ export function GameCanvas() {
         <Suspense fallback={null}>
           <Physics
             timeStep={fixedTimestep ? 1 / 60 : 'vary'}
-            paused={hitStop}
+            paused={hitStop || pendingPick}
             debug={DEBUG && physicsWireframe}
           >
+            <GameClock />
             <KeyboardControls map={keyboardMap}>
               <Player />
             </KeyboardControls>

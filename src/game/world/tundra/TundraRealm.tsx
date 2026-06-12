@@ -42,7 +42,7 @@ function TundraForces() {
   useFrame((_, delta) => {
     const body = runtime.player?.group;
     if (!body || usePlayerStore.getState().dead) return;
-    const now = performance.now() / 1000;
+    const now = runtime.time;
     if (nextGustAt.current === 0) nextGustAt.current = now + 4; // first calm
     const t = body.translation();
 
@@ -129,7 +129,7 @@ function TundraDirector() {
     const scenes = useSceneStore.getState();
     const combat = useCombatStore.getState();
     const { phase, wave } = scenes.tundra;
-    const now = performance.now() / 1000;
+    const now = runtime.time;
     const body = runtime.player?.group;
     if (!body) return;
 
