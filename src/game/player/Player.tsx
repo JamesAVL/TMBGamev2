@@ -1,6 +1,8 @@
 import Ecctrl from 'ecctrl';
 import { CLASSIC_CONTROLS, DEBUG } from '../../debug/flags';
+import { runtime } from '../combat/runtime';
 import { movementConfig, turnSpeed } from './movementConfig';
+import { PlayerCombat } from './PlayerCombat';
 import { PlayerModel } from './PlayerModel';
 
 // ecctrl owns the default camera (steered by mouse, scroll to zoom) — never add
@@ -11,12 +13,16 @@ import { PlayerModel } from './PlayerModel';
 export function Player() {
   return (
     <Ecctrl
+      ref={(handle) => {
+        runtime.player = handle;
+      }}
       {...movementConfig}
       mode={CLASSIC_CONTROLS ? undefined : 'CameraBasedMovement'}
       turnSpeed={CLASSIC_CONTROLS ? turnSpeed.classic : turnSpeed.cameraSteered}
       debug={DEBUG}
     >
       <PlayerModel />
+      <PlayerCombat />
     </Ecctrl>
   );
 }

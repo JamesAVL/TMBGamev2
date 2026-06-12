@@ -4,7 +4,10 @@ import { KeyboardControls } from '@react-three/drei';
 import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
 import { DEBUG } from '../debug/flags';
+import { useCombatStore } from '../stores/combatStore';
 import { keyboardMap } from './controls';
+import { Effects } from './Effects';
+import { Enemies } from './enemies/Enemies';
 import { PointerLockOnClick } from './PointerLockOnClick';
 import { Player } from './player/Player';
 import { Lights } from './world/Lights';
@@ -20,6 +23,8 @@ export function GameCanvas() {
     physicsWireframe: false,
     perfHud: true,
   });
+  // Brief freeze-frame when a swipe connects — cheap, very effective punch
+  const hitStop = useCombatStore((s) => s.hitStopActive);
 
   return (
     <div id="game-canvas">
@@ -40,16 +45,18 @@ export function GameCanvas() {
         )}
         {/* Suspense: rapier's wasm init suspends on first load.
             timeStep="vary" matches ecctrl's canonical setup (its defaults were
-            tuned under it); revisit fixed 1/60 + interpolation at Step 2 for
-            determinism and high-refresh-rate consistency. */}
+            tuned under it); revisit fixed 1/60 + interpolation if combat ever
+            needs determinism or high-refresh consistency. */}
         <Suspense fallback={null}>
-          <Physics timeStep="vary" debug={DEBUG && physicsWireframe}>
+          <Physics timeStep="vary" paused={hitStop} debug={DEBUG && physicsWireframe}>
             <KeyboardControls map={keyboardMap}>
               <Player />
             </KeyboardControls>
+            <Enemies />
             <Playground />
           </Physics>
         </Suspense>
+        <Effects />
       </Canvas>
     </div>
   );

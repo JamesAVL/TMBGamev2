@@ -120,3 +120,85 @@ body,
     opacity: 1;
   }
 }
+
+/* Health: polo-mint pips, naturally */
+.hud-hp {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  display: flex;
+  gap: 7px;
+}
+
+.hud-hp-pip {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 5px solid #f4f1e8;
+  box-shadow: 0 0 8px rgba(244, 241, 232, 0.35);
+  transition:
+    opacity 0.25s,
+    transform 0.25s;
+}
+
+.hud-hp-pip.lost {
+  opacity: 0.18;
+  transform: scale(0.85);
+  box-shadow: none;
+}
+
+.hud-damage-flash {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(190, 30, 30, 0.55) 100%);
+  animation: damage-flash 0.45s ease-out forwards;
+}
+
+@keyframes damage-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hud-death {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(11, 13, 20, 0.55);
+  text-align: center;
+}
+
+.hud-death h2 {
+  font-size: 56px;
+  letter-spacing: 0.22em;
+  color: #9fd08a;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.8);
+}
+
+.hud-death p {
+  margin-top: 10px;
+  font-size: 14px;
+  opacity: 0.75;
+  font-style: italic;
+}
+
+/* The Hitcher's aggro line (drei Html) */
+.hitcher-line {
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  font-size: 13px;
+  font-style: italic;
+  color: #d8e6c8;
+  background: rgba(11, 13, 20, 0.7);
+  border: 1px solid rgba(159, 208, 138, 0.35);
+  border-radius: 8px;
+  padding: 5px 10px;
+  transform: translateY(-4px);
+}

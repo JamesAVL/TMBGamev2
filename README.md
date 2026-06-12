@@ -5,9 +5,12 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
-**Step 1 — Move**: an `ecctrl` character controller in a greybox movement
-playground. Walk, sprint, and jump around ramps, stairs, platforms, gaps,
-a narrow beam, and camera-collision corridors to judge the movement feel.
+**Step 2 — Fight**: the greybox movement playground now has its first enemy —
+the Hitcher, a green cockney toll-collector with a glowing polo-mint eye.
+Swipe him with a click; he winds up, lunges, and knocks you about. Hit flash,
+knockback, hit-stop, synthesized sound, death and respawn included. All audio
+is synthesized Web Audio and all art is original primitives — no third-party
+assets yet.
 
 ## Prerequisites
 
@@ -35,8 +38,9 @@ parameters, physics wireframe toggle) and the r3f-perf HUD.
 
 Click the game to capture the mouse, then:
 
-mouse — steer · W/S — forward/back · A/D — strafe ·
-Shift — sprint · Space — jump · scroll — zoom · Esc — release mouse
+mouse — steer · click — swipe (F also works) · W/S — forward/back ·
+A/D — strafe · Shift — sprint · Space — jump · scroll — zoom ·
+Esc — release mouse
 
 Append `?classic` to the URL for the original scheme (drag-to-orbit camera,
 character turns toward travel direction) to A/B the two feels.
