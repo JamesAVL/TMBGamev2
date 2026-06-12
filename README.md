@@ -5,6 +5,10 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
+**Asset adoptions**: the Bangers typeface (OFL) fronts the title, banners,
+and headings, and the Nabootique stands on a real hardwood floor (three.js
+example texture, MIT). Asset drop-zone folders are documented below.
+
 **The Look Pass**: toon-stepped shading with cutout outlines across the
 world and cast, procedural paper grain on surfaces, a film-collage post
 grade (grain, vignette, saturation), and real CC0 props — KayKit Dungeon
@@ -71,3 +75,21 @@ tools, and new game. A title screen fronts the whole thing.
 
 Append `?classic` to the URL for the original scheme (drag-to-orbit camera,
 character turns toward travel direction) to A/B the two feels.
+
+## Asset drop zones
+
+Better assets than the build environment can reach (it can only fetch from
+GitHub) are welcome — commit them into these folders and they'll be
+integrated in the next increment:
+
+| Folder                      | What goes there                                        |
+| --------------------------- | ------------------------------------------------------ |
+| `public/models/characters/` | rigged/animated characters — **GLB/GLTF only**, no FBX |
+| `public/models/winter/`     | tundra props (trees, rocks, ruins) — GLB/GLTF          |
+| `public/textures/<Name>/`   | tiling textures, 1K (1024px) per material              |
+| `public/audio/`             | UI/combat sound effects (ogg/mp3)                      |
+| `public/audio/music/`       | looping music tracks (ogg/mp3)                         |
+
+Each folder has a `SOURCES.txt` — add a line per asset (name, author,
+licence, URL) so `CREDITS.md` stays honest. Good hunting grounds:
+Quaternius (poly.pizza), ambientCG, Kenney.nl, OpenGameArt — all CC0.
