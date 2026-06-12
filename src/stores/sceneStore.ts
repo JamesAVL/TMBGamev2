@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type SceneId = 'greybox' | 'tundra';
+export type SceneId = 'hub' | 'greybox' | 'tundra';
 export type TundraPhase = 'approach' | 'waves' | 'boss' | 'egg' | 'cleared';
 
 type TundraProgress = { phase: TundraPhase; wave: number };
@@ -15,7 +15,7 @@ type SceneState = {
 };
 
 export const useSceneStore = create<SceneState>()((set) => ({
-  scene: 'greybox',
+  scene: 'hub', // every story starts in a shop
   tundra: { phase: 'approach', wave: 0 },
   objective: '',
   setScene: (scene) =>

@@ -138,11 +138,16 @@ export function Playground() {
       <Block size={[0.5, 0.5, 0.5]} position={[-3, 0.25, 4]} color="#bd8a62" />
       <Block size={[1, 4, 1]} position={[-5, 2, -3]} color="#a8744f" />
 
-      {/* The door to the Tundra — framed in glacier ice, humming quietly */}
-      <Block size={[1, 3.4, 1]} position={[-2.4, 1.7, 22]} color="#9fc4dd" />
-      <Block size={[1, 3.4, 1]} position={[2.4, 1.7, 22]} color="#9fc4dd" />
-      <Block size={[5.8, 1, 1]} position={[0, 3.9, 22]} color="#9fc4dd" />
-      <Portal position={[0, 1.7, 22]} label="THE TUNDRA" onEnter={() => setScene('tundra')} />
+      {/* The door home to the shop */}
+      <Block size={[1, 3.4, 1]} position={[-2.4, 1.7, 22]} color="#5a4a36" />
+      <Block size={[1, 3.4, 1]} position={[2.4, 1.7, 22]} color="#5a4a36" />
+      <Block size={[5.8, 1, 1]} position={[0, 3.9, 22]} color="#5a4a36" />
+      <Portal
+        position={[0, 1.7, 22]}
+        label="THE NABOOTIQUE"
+        color="#ffb070"
+        onEnter={() => setScene('hub')}
+      />
 
       {/* Perimeter rim — keeps the player on the slab (no respawn logic yet) */}
       <Block size={[80, 1.5, 0.5]} position={[0, 0.75, -39.75]} color="#4a4e57" />

@@ -5,6 +5,7 @@ import { Physics } from '@react-three/rapier';
 import { useControls } from 'leva';
 import { DEBUG } from '../debug/flags';
 import { useCombatStore } from '../stores/combatStore';
+import { useHubStore } from '../stores/hubStore';
 import { useRunStore } from '../stores/runStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { keyboardMap } from './controls';
@@ -16,6 +17,7 @@ import { GameClock } from './GameClock';
 import { PointerLockOnClick } from './PointerLockOnClick';
 import { Player } from './player/Player';
 import { SceneManager } from './SceneManager';
+import { Nabootique } from './world/hub/Nabootique';
 import { Lights } from './world/Lights';
 import { Playground } from './world/Playground';
 
@@ -40,6 +42,7 @@ export function GameCanvas() {
   // The skills panel pauses the whole sim while open.
   const hitStop = useCombatStore((s) => s.hitStopActive);
   const skillsOpen = useRunStore((s) => s.panelOpen);
+  const hubUiOpen = useHubStore((s) => s.dialogOpen || s.shopOpen);
   const scene = useSceneStore((s) => s.scene);
 
   return (
@@ -73,7 +76,7 @@ export function GameCanvas() {
         <Suspense fallback={null}>
           <Physics
             timeStep={fixedTimestep ? 1 / 60 : 'vary'}
-            paused={hitStop || skillsOpen}
+            paused={hitStop || skillsOpen || hubUiOpen}
             debug={DEBUG && physicsWireframe}
           >
             <GameClock />
@@ -84,7 +87,9 @@ export function GameCanvas() {
             <Projectiles />
             <DamageNumbers />
             <Enemies />
-            {scene === 'greybox' ? <Playground /> : <TundraRealm />}
+            {scene === 'hub' && <Nabootique />}
+            {scene === 'greybox' && <Playground />}
+            {scene === 'tundra' && <TundraRealm />}
           </Physics>
         </Suspense>
         <Effects />

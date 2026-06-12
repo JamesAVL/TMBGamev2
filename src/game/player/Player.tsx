@@ -1,5 +1,6 @@
 import Ecctrl from 'ecctrl';
 import { CLASSIC_CONTROLS, DEBUG } from '../../debug/flags';
+import { useHubStore } from '../../stores/hubStore';
 import { useProfileStore } from '../../stores/profileStore';
 import { useRunStore } from '../../stores/runStore';
 import { useSceneStore } from '../../stores/sceneStore';
@@ -19,6 +20,7 @@ export function Player() {
   // Run upgrades scale movement; Ecctrl re-renders with new props on pick
   // (rare), and its frame loop reads the latest values.
   const speedMult = useRunStore((s) => s.stats.shared.speedMult);
+  const jumpMult = useHubStore((s) => s.mods.jumpMult); // Moon Rock
   const scene = useSceneStore((s) => s.scene);
   // re-render on character switch so the model swaps (subscription only)
   useProfileStore((s) => s.character);
@@ -34,6 +36,7 @@ export function Player() {
       characterInitDir={SCENE_FACING[scene]}
       camInitDir={{ x: 0, y: SCENE_FACING[scene] }}
       maxVelLimit={movementConfig.maxVelLimit * speedMult}
+      jumpVel={movementConfig.jumpVel * jumpMult}
       // ccd: first-load shader-compile hitches make physics take one huge step
       // (rapier clamps it to 0.5s) — enough for the falling spawn capsule to
       // tunnel through the floor. Continuous collision detection sweeps the

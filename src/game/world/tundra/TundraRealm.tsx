@@ -5,6 +5,7 @@ import type * as THREE from 'three';
 import { sfx } from '../../../audio/sfx';
 import { aliveCount, useCombatStore } from '../../../stores/combatStore';
 import { usePlayerStore } from '../../../stores/playerStore';
+import { useHubStore } from '../../../stores/hubStore';
 import { useSceneStore } from '../../../stores/sceneStore';
 import { runtime } from '../../combat/runtime';
 import { BlackFrost } from '../../enemies/BlackFrost';
@@ -93,9 +94,11 @@ function EggOfMantumbi() {
     const dz = t.z + 48;
     if (dx * dx + dz * dz < 2.2) {
       sfx.treasure();
+      useHubStore.getState().earnShrapnel(25);
+      useHubStore.getState().recordClear();
       const scenes = useSceneStore.getState();
       scenes.setTundra({ phase: 'cleared' });
-      scenes.setObjective('The Egg of Mantumbi is yours. The way home is open.');
+      scenes.setObjective('The Egg of Mantumbi is yours (+25 shrapnel). The way home is open.');
     }
   });
 
@@ -280,7 +283,7 @@ export function TundraRealm() {
           position={[0, 1.7, -51]}
           label="HOME"
           color="#9fd08a"
-          onEnter={() => setScene('greybox')}
+          onEnter={() => setScene('hub')}
         />
       )}
 

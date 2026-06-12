@@ -11,6 +11,9 @@ type PlayerState = {
   hitCount: number; // increments every hit taken — keys the damage-flash animation
   lastDamagedAt: number;
   frozenUntil: number; // game-clock time; the Black Frost's signature
+  mirrorCharges: number; // Mirror Ball: armed per realm entry, spent on a killing blow
+  lastMirrorAt: number; // game-clock time of the last save (drives the flash)
+  armMirror: () => void;
   damagePlayer: (amount: number) => void;
   freezePlayer: (seconds: number) => void;
   heal: (amount: number) => void;
@@ -26,11 +29,27 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   hitCount: 0,
   lastDamagedAt: -Infinity,
   frozenUntil: 0,
+  mirrorCharges: 0,
+  lastMirrorAt: -Infinity,
+  armMirror: () => set({ mirrorCharges: 1 }),
   damagePlayer: (amount) => {
     const s = get();
     const now = runtime.time;
     if (s.dead || now - s.lastDamagedAt < INVULN_SECONDS) return;
-    const hp = Math.max(0, s.hp - amount);
+    let hp = Math.max(0, s.hp - amount);
+    // The Mirror Ball: death glances at itself and reconsiders, once
+    if (hp === 0 && s.mirrorCharges > 0) {
+      hp = 1;
+      set({
+        hp,
+        dead: false,
+        hitCount: s.hitCount + 1,
+        lastDamagedAt: now,
+        mirrorCharges: 0,
+        lastMirrorAt: now,
+      });
+      return;
+    }
     set({ hp, dead: hp === 0, hitCount: s.hitCount + 1, lastDamagedAt: now });
   },
   freezePlayer: (seconds) => {

@@ -10,7 +10,10 @@ import {
   SWITCH_LINES,
   TUNDRA_ENTRY_EXCHANGES,
 } from '../game/dialogue/banter';
+import { nabooLines } from '../game/dialogue/naboo';
 import { SKILLS, type SkillOwner } from '../game/progression/skills';
+import { TRINKETS } from '../game/progression/trinkets';
+import { useHubStore } from '../stores/hubStore';
 import { useCombatStore } from '../stores/combatStore';
 import { usePlayerStore } from '../stores/playerStore';
 import { useProfileStore } from '../stores/profileStore';
@@ -120,6 +123,112 @@ function SkillsPanel() {
   );
 }
 
+function NabooDialog() {
+  const open = useHubStore((s) => s.dialogOpen);
+  // remounts per open, so the line index starts fresh without effect-set-state
+  return open ? <NabooDialogInner /> : null;
+}
+
+function NabooDialogInner() {
+  const clears = useHubStore((s) => s.tundraClears);
+  const [lineIdx, setLineIdx] = useState(0);
+
+  useEffect(() => {
+    document.exitPointerLock();
+  }, []);
+
+  const lines = nabooLines(clears);
+  const line = lines[Math.min(lineIdx, lines.length - 1)]!;
+  const last = lineIdx >= lines.length - 1;
+
+  const close = () => {
+    useHubStore.getState().setDialogOpen(false);
+    relockPointer();
+  };
+
+  return (
+    <div className="hud-dialog">
+      <div className="hud-dialog-box">
+        <div className="hud-dialog-name">NABOO</div>
+        <p className="hud-dialog-line">{line}</p>
+        <div className="hud-dialog-actions">
+          {!last && (
+            <button onClick={() => setLineIdx((i) => i + 1)}>
+              … <kbd>E</kbd>
+            </button>
+          )}
+          {last && (
+            <>
+              <button
+                onClick={() => {
+                  useHubStore.getState().setDialogOpen(false);
+                  useHubStore.getState().setShopOpen(true);
+                }}
+              >
+                browse the tat
+              </button>
+              <button onClick={close}>later</button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TatShop() {
+  const open = useHubStore((s) => s.shopOpen);
+  const shrapnel = useHubStore((s) => s.shrapnel);
+  const trinkets = useHubStore((s) => s.trinkets);
+
+  useEffect(() => {
+    if (open) document.exitPointerLock();
+  }, [open]);
+
+  if (!open) return null;
+
+  const close = () => {
+    useHubStore.getState().setShopOpen(false);
+    relockPointer();
+  };
+
+  return (
+    <div className="hud-skills">
+      <h3>THE TAT</h3>
+      <p>{shrapnel} shrapnel — Naboo watches you browse</p>
+      <div className="hud-skills-list">
+        {TRINKETS.map((def) => {
+          const owned = Boolean(trinkets[def.id]);
+          const affordable = shrapnel >= def.price;
+          return (
+            <div key={def.id} className="hud-skill-row">
+              <div className="hud-skill-info">
+                <span className="hud-skill-name">{def.name}</span>
+                <span className="hud-skill-blurb">{def.blurb}</span>
+                <span className="hud-skill-value">{def.effect}</span>
+              </div>
+              {owned ? (
+                <span className="hud-trinket-owned">owned</span>
+              ) : (
+                <button
+                  className="hud-trinket-buy"
+                  disabled={!affordable}
+                  onClick={() => useHubStore.getState().buyTrinket(def.id)}
+                >
+                  {def.price}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <button className="hud-skills-close" onClick={close}>
+        done — back to it
+      </button>
+    </div>
+  );
+}
+
 function BossBar() {
   const boss = useCombatStore((s) => s.enemies['blackfrost']);
   if (!boss || !boss.aggro || !boss.alive) return null;
@@ -146,6 +255,8 @@ export function Hud() {
   const objective = useSceneStore((s) => s.objective);
   const phase = useSceneStore((s) => s.tundra.phase);
   const character = useProfileStore((s) => s.character);
+  const nearNaboo = useHubStore((s) => s.nearNaboo);
+  const shrapnel = useHubStore((s) => s.shrapnel);
 
   const [bubble, setBubble] = useState<{ id: number; text: string } | null>(null);
   const bubbleSeq = useRef(0);
@@ -164,6 +275,8 @@ export function Hud() {
       if (e.repeat) return;
       if (e.code === 'KeyT') {
         if (usePlayerStore.getState().dead) return; // no spending from beyond
+        const hubT = useHubStore.getState();
+        if (hubT.dialogOpen || hubT.shopOpen) return; // Naboo is talking
         const run = useRunStore.getState();
         const opening = !run.panelOpen;
         run.setPanelOpen(opening);
@@ -171,9 +284,21 @@ export function Hud() {
         else relockPointer();
         return;
       }
+      if (e.code === 'KeyE') {
+        const hub = useHubStore.getState();
+        if (hub.shopOpen) return; // buttons handle the shop
+        if (hub.dialogOpen) return; // dialog advances via its button
+        if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
+          hub.setDialogOpen(true);
+          document.exitPointerLock();
+        }
+        return;
+      }
       if (e.code === 'KeyQ') {
         const run = useRunStore.getState();
-        if (run.panelOpen || usePlayerStore.getState().dead) return;
+        const hubQ = useHubStore.getState();
+        if (run.panelOpen || hubQ.dialogOpen || hubQ.shopOpen) return;
+        if (usePlayerStore.getState().dead) return;
         const boss = useCombatStore.getState().enemies['blackfrost'];
         if (boss?.alive && boss.aggro) {
           showBubble(BOSS_LOCK_LINE);
@@ -278,6 +403,7 @@ export function Hud() {
           {bubble.text}
         </div>
       )}
+      <div className="hud-shrapnel">{shrapnel} shrapnel</div>
       <div className="hud-hp" aria-label={`health ${hp} of ${maxHp}`}>
         {Array.from({ length: maxHp }, (_, i) => (
           <span key={i} className={i < hp ? 'hud-hp-pip' : 'hud-hp-pip lost'} />
@@ -296,6 +422,13 @@ export function Hud() {
           </p>
         </div>
       )}
+      {nearNaboo && scene === 'hub' && (
+        <div className="hud-talk-prompt">
+          <kbd>E</kbd> — talk to Naboo
+        </div>
+      )}
+      <NabooDialog />
+      <TatShop />
       {!CLASSIC_CONTROLS && !locked && !dead && (
         <div className="hud-lock-prompt">click to take control</div>
       )}
