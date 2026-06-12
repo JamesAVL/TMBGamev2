@@ -135,6 +135,13 @@ export function Hitcher({ spawn }: { spawn: HitcherSpawn }) {
     const playerDead = usePlayerStore.getState().dead;
     const p = playerBody.translation();
     const t = body.translation();
+
+    // Safety net: knocked below the world → back to his post
+    if (t.y < -10) {
+      body.setTranslation({ x: position[0], y: position[1], z: position[2] }, true);
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      return;
+    }
     toPlayer.set(p.x - t.x, 0, p.z - t.z);
     const dist = toPlayer.length();
 
@@ -220,6 +227,7 @@ export function Hitcher({ spawn }: { spawn: HitcherSpawn }) {
     <RigidBody
       ref={bodyRef}
       colliders={false}
+      ccd
       enabledRotations={[false, false, false]}
       position={position}
     >

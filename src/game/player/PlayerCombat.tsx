@@ -5,8 +5,10 @@ import { ensureAudio, sfx } from '../../audio/sfx';
 import { useCombatStore } from '../../stores/combatStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { runtime } from '../combat/runtime';
+import { movementConfig } from './movementConfig';
 
 const ATTACK_COOLDOWN = 0.45;
+const VOID_Y = -10; // below the slab: teleport home instead of falling forever
 const ATTACK_RANGE = 2.4;
 const ATTACK_HALF_ANGLE_COS = Math.cos((55 * Math.PI) / 180);
 const SWIPE_LIFETIME = 0.18;
@@ -95,16 +97,23 @@ export function PlayerCombat() {
       }
     }
 
+    const body = runtime.player?.group;
+    const teleportHome = () => {
+      if (!body) return;
+      const [x, y, z] = movementConfig.position;
+      body.setTranslation({ x, y, z }, true);
+      body.setLinvel({ x: 0, y: 0, z: 0 }, true);
+    };
+
+    // Safety net: anything that slips below the world goes home
+    if (body && body.translation().y < VOID_Y) teleportHome();
+
     // Death → brief pause → teleport home with full hp
     const player = usePlayerStore.getState();
     if (player.dead) {
       if (deadAtRef.current === 0) deadAtRef.current = now;
       if (now - deadAtRef.current > RESPAWN_DELAY) {
-        const body = runtime.player?.group;
-        if (body) {
-          body.setTranslation({ x: 0, y: 4, z: 0 }, true);
-          body.setLinvel({ x: 0, y: 0, z: 0 }, true);
-        }
+        teleportHome();
         deadAtRef.current = 0;
         player.respawnPlayer();
       }

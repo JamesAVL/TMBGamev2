@@ -17,6 +17,11 @@ export function Player() {
         runtime.player = handle;
       }}
       {...movementConfig}
+      // ccd: first-load shader-compile hitches make physics take one huge step
+      // (rapier clamps it to 0.5s) — enough for the falling spawn capsule to
+      // tunnel through the floor. Continuous collision detection sweeps the
+      // motion path instead.
+      ccd
       mode={CLASSIC_CONTROLS ? undefined : 'CameraBasedMovement'}
       turnSpeed={CLASSIC_CONTROLS ? turnSpeed.classic : turnSpeed.cameraSteered}
       debug={DEBUG}
