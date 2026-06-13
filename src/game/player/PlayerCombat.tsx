@@ -11,7 +11,6 @@ import { useRunStore } from '../../stores/runStore';
 import { useHubStore } from '../../stores/hubStore';
 import { useRunTracker } from '../../stores/runTrackerStore';
 import { useSceneStore } from '../../stores/sceneStore';
-import { useSettingsStore } from '../../stores/settingsStore';
 import { useUiStore } from '../../stores/uiStore';
 import { popDamage } from '../combat/damagePopups';
 import { throwRecord } from '../combat/projectilePool';
@@ -32,9 +31,6 @@ const MIST_DAMAGE_FACTOR = 0.35;
 const MAX_MISTS = 4;
 const VOID_Y = -10; // below the slab: teleport home instead of falling forever
 const RESPAWN_DELAY = 1.4;
-// Touch aim assist: only snap onto an enemy within ±60° of where Vince/Howard
-// already face, so the spray/throw always reads as coming from the front.
-const AIM_FRONT_COS = Math.cos((60 * Math.PI) / 180);
 
 type Mist = { id: number; x: number; z: number; until: number; nextTick: number };
 
@@ -57,15 +53,6 @@ export function PlayerCombat() {
   const mistSeq = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
-  // Temps for orienting the spray cone to the auto-aim direction (touch only).
-  const facingVec = useMemo(() => new THREE.Vector3(), []);
-  const toBest = useMemo(() => new THREE.Vector3(), []);
-  const handPos = useMemo(() => new THREE.Vector3(), []);
-  const yAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
-  const coneTilt = useMemo(
-    () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)),
-    [],
-  );
   // Cone with its APEX at the origin, extending −Y (rotated to +Z below):
   // scaling z stretches it forward only, anchored at the can.
   const sprayGeometry = useMemo(() => {
@@ -176,14 +163,10 @@ export function PlayerCombat() {
       const dmg = collection.damage * (rare ? 2 : 1);
       const knockback = 3 + collection.knockbackBonus + (rare ? 1 : 0);
       sfx.throwWhoosh();
-      // Leave from the hand if we have it, else the old body-forward offset.
-      const hand = runtime.playerHand;
-      if (hand) hand.getWorldPosition(handPos);
-      else handPos.set(p.x + forward.x * 0.5, p.y + 0.35, p.z + forward.z * 0.5);
       throwRecord({
-        x: handPos.x,
-        y: handPos.y,
-        z: handPos.z,
+        x: p.x + forward.x * 0.5,
+        y: p.y + 0.35,
+        z: p.z + forward.z * 0.5,
         dx: forward.x,
         dz: forward.z,
         speed: RECORD_SPEED * collection.speedMult,
@@ -238,49 +221,15 @@ export function PlayerCombat() {
       ensureAudio();
 
       const p = body.translation();
-      // Touch: front-arc aim assist. Snap onto the nearest living enemy ONLY if
-      // it's within ±60° of where the character actually faces; otherwise fire
-      // straight ahead — so the spray/throw never comes out the back. Desktop
-      // aims with the camera, unchanged.
-      if (useSettingsStore.getState().touchControls) {
-        // Facing = +Z of the rotating character group (the cone's parent).
-        const rig = sprayRef.current?.parent;
-        if (rig) {
-          rig.getWorldDirection(facingVec);
-          facingVec.y = 0;
-        }
-        if (!rig || facingVec.lengthSq() < 1e-6) {
-          const v = body.linvel();
-          if (Math.hypot(v.x, v.z) > 0.4) facingVec.set(v.x, 0, v.z);
-          else {
-            camera.getWorldDirection(facingVec);
-            facingVec.y = 0;
-          }
-        }
-        facingVec.normalize();
-        const combat = useCombatStore.getState();
-        let best: { x: number; z: number; d2: number } | null = null;
-        for (const [id, eBody] of runtime.enemyBodies) {
-          if (!combat.enemies[id]?.alive) continue;
-          const t = eBody.translation();
-          const dx = t.x - p.x;
-          const dz = t.z - p.z;
-          const d2 = dx * dx + dz * dz;
-          if (!best || d2 < best.d2) best = { x: dx, z: dz, d2 };
-        }
-        if (best && best.d2 > 1e-4) {
-          toBest.set(best.x, 0, best.z).normalize();
-          forward.copy(facingVec.dot(toBest) >= AIM_FRONT_COS ? toBest : facingVec);
-        } else {
-          forward.copy(facingVec);
-        }
-        runtime.aimDir = { x: forward.x, z: forward.z };
-      } else {
-        camera.getWorldDirection(forward);
-        forward.y = 0;
-        forward.normalize();
-        runtime.aimDir = { x: forward.x, z: forward.z };
-      }
+      // Aim where the character faces: +Z of the rotating character group (the
+      // spray cone's parent). Works in both schemes — touch faces the joystick
+      // direction, desktop CameraBasedMovement faces the camera. Camera fallback
+      // before the cone ref exists.
+      const rig = sprayRef.current?.parent;
+      if (rig) rig.getWorldDirection(forward);
+      else camera.getWorldDirection(forward);
+      forward.y = 0;
+      forward.normalize();
 
       // One-shot attack clip on the rig (action2 = spellcast-as-spray,
       // action1 = throw); ecctrl's useGame store routes it to the mixer.
@@ -307,7 +256,7 @@ export function PlayerCombat() {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [camera, forward, toEnemy, facingVec, toBest, handPos]);
+  }, [camera, forward, toEnemy]);
 
   // Damage one enemy from a mist tick (no sounds per tick — too spammy)
   const mistStrike = (id: string, dmg: number, dir: THREE.Vector3) => {
@@ -350,21 +299,6 @@ export function PlayerCombat() {
           stats.vince.rangeMult,
         );
         sprayMatRef.current.opacity = 0.7 * (1 - k);
-        // World-space cone: park the apex at the hand and fan it toward the
-        // aim. The −90° coneTilt points the geometry along +Z, then the yaw
-        // turns +Z onto the aim direction.
-        const hand = runtime.playerHand;
-        if (hand) hand.getWorldPosition(sprayRef.current.position);
-        else {
-          const t = runtime.player?.group?.translation();
-          if (t) sprayRef.current.position.set(t.x, t.y + 0.3, t.z);
-        }
-        const aim = runtime.aimDir;
-        if (aim) {
-          sprayRef.current.quaternion
-            .setFromAxisAngle(yAxis, Math.atan2(aim.x, aim.z))
-            .multiply(coneTilt);
-        }
       }
     }
 
@@ -481,21 +415,28 @@ export function PlayerCombat() {
           depthWrite={false}
         />
       </mesh>
-      {/* World-space FX: the spray cone (apex parked at the hand, fanning toward
-          the aim — placed each frame in useFrame) and the Extra Hold mists. */}
+      {/* Spray cone: child of the body, apex near the right hand, fanning along
+          +Z — the character's facing (position/rotation are visual dials). */}
+      <mesh
+        ref={sprayRef}
+        visible={false}
+        position={[0.18, 0.12, 0.3]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        geometry={sprayGeometry}
+      >
+        <meshStandardMaterial
+          ref={sprayMatRef}
+          color="#cfe0ff"
+          emissive="#e8d4ff"
+          emissiveIntensity={2}
+          transparent
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+      {/* Extra Hold mists live in world space, not on the moving body */}
       {createPortal(
         <>
-          <mesh ref={sprayRef} visible={false} geometry={sprayGeometry}>
-            <meshStandardMaterial
-              ref={sprayMatRef}
-              color="#cfe0ff"
-              emissive="#e8d4ff"
-              emissiveIntensity={2}
-              transparent
-              depthWrite={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
           {mists.map((mist) => (
             <mesh key={mist.id} position={[mist.x, 0.06, mist.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <circleGeometry args={[MIST_RADIUS, 24]} />
