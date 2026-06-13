@@ -16,6 +16,7 @@ export function PauseMenu() {
   const volume = useSettingsStore((s) => s.volume);
   const performanceMode = useSettingsStore((s) => s.performanceMode);
   const controlScheme = useSettingsStore((s) => s.controlScheme);
+  const touchControls = useSettingsStore((s) => s.touchControls);
   const debugTools = useSettingsStore((s) => s.debugTools);
   const scene = useSceneStore((s) => s.scene);
   const [confirmWipe, setConfirmWipe] = useState(false);
@@ -77,6 +78,15 @@ export function PauseMenu() {
             </button>
           </div>
         </div>
+
+        <label className="pause-row">
+          <span>touch controls</span>
+          <input
+            type="checkbox"
+            checked={touchControls}
+            onChange={(e) => useSettingsStore.getState().setTouchControls(e.target.checked)}
+          />
+        </label>
 
         <label className="pause-row">
           <span>performance mode</span>

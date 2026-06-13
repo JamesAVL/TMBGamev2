@@ -10,12 +10,15 @@ import { useSettingsStore } from '../stores/settingsStore';
 export function PointerLockOnClick() {
   const gl = useThree((state) => state.gl);
   const scheme = useSettingsStore((s) => s.controlScheme);
+  const touch = useSettingsStore((s) => s.touchControls);
 
   useEffect(() => {
     const el = gl.domElement;
     const noMenu = (e: Event) => e.preventDefault();
     el.addEventListener('contextmenu', noMenu);
-    if (scheme !== 'mouse') {
+    // No pointer lock in the keyboard scheme or under touch (the joystick +
+    // ecctrl's touch-drag steer there) — but keep the context-menu block.
+    if (scheme !== 'mouse' || touch) {
       return () => el.removeEventListener('contextmenu', noMenu);
     }
     const requestLock = () => {
@@ -28,7 +31,7 @@ export function PointerLockOnClick() {
       el.removeEventListener('contextmenu', noMenu);
       if (document.pointerLockElement === el) document.exitPointerLock();
     };
-  }, [gl, scheme]);
+  }, [gl, scheme, touch]);
 
   return null;
 }

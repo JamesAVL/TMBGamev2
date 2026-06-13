@@ -47,6 +47,7 @@ export function GameCanvas() {
   const framePaused = useUiStore((s) => s.phase !== 'playing' || s.pauseOpen);
   const debugTools = useSettingsStore((s) => s.debugTools);
   const performanceMode = useSettingsStore((s) => s.performanceMode);
+  const touchControls = useSettingsStore((s) => s.touchControls);
   const scene = useSceneStore((s) => s.scene);
 
   return (
@@ -75,11 +76,13 @@ export function GameCanvas() {
         )}
         {/* Suspense: rapier's wasm init suspends on first load.
             timeStep="vary" matches ecctrl's canonical setup (its defaults were
-            tuned under it); revisit fixed 1/60 + interpolation if combat ever
-            needs determinism or high-refresh consistency. */}
+            tuned under it) — but it feeds raw frame deltas to the integrator,
+            which at low FPS can destabilise springs. Touch (mobile) uses the
+            fixed 1/60 accumulator so per-step dt is bounded at any frame rate;
+            the leva fixedTimestep stays as the desktop A/B. */}
         <Suspense fallback={null}>
           <Physics
-            timeStep={fixedTimestep ? 1 / 60 : 'vary'}
+            timeStep={touchControls || fixedTimestep ? 1 / 60 : 'vary'}
             paused={hitStop || skillsOpen || hubUiOpen || framePaused}
             debug={debugTools && physicsWireframe}
           >

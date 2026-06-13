@@ -917,3 +917,113 @@ button.title-danger {
   padding: 7px 22px;
   cursor: pointer;
 }
+
+/* ---- Touch controls ---- */
+/* Pure DOM joystick (bottom-left) — no WebGL. The knob is grid-centred so the
+   JS transform translates it from centre; reset returns it to translate(0,0). */
+.touch-joystick {
+  position: absolute;
+  left: 28px;
+  bottom: 28px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(11, 13, 20, 0.4);
+  border: 1px solid rgba(244, 241, 232, 0.3);
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.touch-joystick-knob {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(244, 241, 232, 0.5);
+  border: 1px solid rgba(244, 241, 232, 0.65);
+  pointer-events: none;
+}
+
+/* Action buttons (bottom-right). The container ignores pointers; the buttons
+   opt back in, so taps between them fall through to the camera. */
+.touch-controls {
+  position: absolute;
+  right: 18px;
+  bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  pointer-events: none;
+}
+
+.touch-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+}
+
+.touch-btn {
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  display: grid;
+  place-items: center;
+  font-family: var(--display-font);
+  letter-spacing: 0.06em;
+  color: #f4f1e8;
+  background: rgba(11, 13, 20, 0.5);
+  border: 1px solid rgba(244, 241, 232, 0.4);
+  border-radius: 50%;
+  backdrop-filter: blur(2px);
+}
+
+.touch-btn:active {
+  background: rgba(255, 215, 110, 0.3);
+  border-color: #ffd76e;
+}
+
+.touch-btn.small {
+  width: 58px;
+  height: 58px;
+  font-size: 13px;
+}
+
+.touch-btn.talk {
+  color: #ffb070;
+  border-color: rgba(255, 176, 112, 0.7);
+}
+
+.touch-btn.jump {
+  width: 74px;
+  height: 74px;
+  font-size: 15px;
+}
+
+.touch-btn.attack {
+  width: 96px;
+  height: 96px;
+  font-size: 17px;
+  color: #ffd76e;
+  background: rgba(255, 215, 110, 0.16);
+  border: 2px solid rgba(255, 215, 110, 0.65);
+}
+
+/* In touch mode the joystick owns the bottom-left, so the hint moves to a thin
+   centred strip above the XP bar. */
+.hud-controls.touch {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 72px;
+  max-width: 300px;
+  min-width: 0;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.5;
+}

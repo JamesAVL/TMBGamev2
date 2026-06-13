@@ -22,8 +22,11 @@ export function Player() {
   const speedMult = useRunStore((s) => s.stats.shared.speedMult);
   const scene = useSceneStore((s) => s.scene);
   const controlScheme = useSettingsStore((s) => s.controlScheme);
+  const touchControls = useSettingsStore((s) => s.touchControls);
   const debugTools = useSettingsStore((s) => s.debugTools);
-  const classic = controlScheme === 'keyboard';
+  // Touch runs ecctrl's default mode (joystick steers camera-relative); only
+  // CameraBasedMovement ignores the joystick angle. So touch == classic here.
+  const classic = controlScheme === 'keyboard' || touchControls;
   // re-render on character switch so the model swaps (subscription only)
   useProfileStore((s) => s.character);
 
@@ -42,7 +45,7 @@ export function Player() {
 
   return (
     <Ecctrl
-      key={`${scene}:${controlScheme}:${debugTools ? 'dbg' : 'plain'}`}
+      key={`${scene}:${controlScheme}:${touchControls ? 'touch' : 'std'}:${debugTools ? 'dbg' : 'plain'}`}
       ref={(handle) => {
         runtime.player = handle;
       }}
@@ -57,6 +60,10 @@ export function Player() {
       // motion path instead.
       ccd
       animated
+      // autoBalance applies a fixed per-frame yaw torque that goes unstable at
+      // low FPS (the old "spinning character"); off on touch locks the capsule
+      // rotations instead, so phones can never spin regardless of frame rate.
+      autoBalance={!touchControls}
       mode={classic ? undefined : 'CameraBasedMovement'}
       turnSpeed={classic ? turnSpeed.classic : turnSpeed.cameraSteered}
       debug={debugTools}
