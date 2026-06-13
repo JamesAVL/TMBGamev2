@@ -1,9 +1,8 @@
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { getGradientMap } from '../look/toon';
-import { runtime } from '../combat/runtime';
 
 // A KayKit Adventurer dressed for the Boosh: rigged body only — every
 // hand-slot weapon and the wizard hat stay hidden (the legends' attacks are
@@ -89,33 +88,14 @@ export function KayLegend({ url, held }: { url: string; held?: HeldProp }) {
     const s = TARGET_HEIGHT / height;
     root.scale.setScalar(s);
     root.position.y = FOOT_Y - box.min.y * s;
-    return root;
-  }, [scene]);
-
-  // Expose the right hand for hand-origin attacks and seat the held prop in it.
-  // Cleanup clears the shared handle (PlayerCombat outlives a legend swap).
-  useEffect(() => {
-    const hand = model.getObjectByName('handslot.r') ?? null;
-    runtime.playerHand = hand;
-    if (!hand || !held) {
-      return () => {
-        if (runtime.playerHand === hand) runtime.playerHand = null;
-      };
+    // Seat the held prop in the right hand synchronously (part of the model
+    // before it renders, so it reliably shows and rides the animated hand).
+    if (held) {
+      const hand = root.getObjectByName('handslot.r') ?? root.getObjectByName('hand.r');
+      if (hand) hand.add(makeHeldProp(held));
     }
-    const prop = makeHeldProp(held);
-    hand.add(prop);
-    return () => {
-      hand.remove(prop);
-      prop.traverse((o) => {
-        const m = o as THREE.Mesh;
-        m.geometry?.dispose?.();
-        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
-        if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
-        else mat?.dispose?.();
-      });
-      if (runtime.playerHand === hand) runtime.playerHand = null;
-    };
-  }, [model, held]);
+    return root;
+  }, [scene, held]);
 
   return <primitive object={model} />;
 }
