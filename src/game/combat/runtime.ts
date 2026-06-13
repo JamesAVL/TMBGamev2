@@ -1,5 +1,6 @@
 import type { CustomEcctrlRigidBody } from 'ecctrl';
 import type { RapierRigidBody } from '@react-three/rapier';
+import type * as THREE from 'three';
 
 export type SwipeTarget = {
   position: () => { x: number; y: number; z: number };
@@ -23,4 +24,7 @@ export const runtime = {
   // Touch ATTACK button state — PlayerCombat's frame loop fires while held,
   // so a hold auto-repeats at the weapon's own cooldown.
   attackHeld: false,
+  // The active legend's right-hand node (KayKit `handslot.r`), set by KayLegend.
+  // The spray cone parks its apex here so it fires from the (animated) hand.
+  playerHand: null as THREE.Object3D | null,
 };

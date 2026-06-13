@@ -53,6 +53,7 @@ export function PlayerCombat() {
   const mistSeq = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
+  const handLocal = useMemo(() => new THREE.Vector3(), []);
   // Cone with its APEX at the origin, extending −Y (rotated to +Z below):
   // scaling z stretches it forward only, anchored at the can.
   const sprayGeometry = useMemo(() => {
@@ -299,6 +300,16 @@ export function PlayerCombat() {
           stats.vince.rangeMult,
         );
         sprayMatRef.current.opacity = 0.7 * (1 - k);
+        // Apex at the (animated) hand: take the hand bone's world position into
+        // the cone's parent (character) frame. Rotation stays the static tilt,
+        // so the cone still fans along +Z = the character's facing.
+        const hand = runtime.playerHand;
+        const parent = sprayRef.current.parent;
+        if (hand && parent) {
+          hand.getWorldPosition(handLocal);
+          parent.worldToLocal(handLocal);
+          sprayRef.current.position.copy(handLocal);
+        }
       }
     }
 
@@ -415,12 +426,13 @@ export function PlayerCombat() {
           depthWrite={false}
         />
       </mesh>
-      {/* Spray cone: child of the body, apex near the right hand, fanning along
-          +Z — the character's facing (position/rotation are visual dials). */}
+      {/* Spray cone: child of the body, apex parked at the hand each frame (see
+          useFrame); fans along +Z = the character's facing. The position here is
+          only the fallback before the hand bone resolves. */}
       <mesh
         ref={sprayRef}
         visible={false}
-        position={[0.18, 0.12, 0.3]}
+        position={[0.12, -0.15, 0.3]}
         rotation={[-Math.PI / 2, 0, 0]}
         geometry={sprayGeometry}
       >
