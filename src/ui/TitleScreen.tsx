@@ -1,12 +1,7 @@
 import { useState } from 'react';
-import { isMouseScheme } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
+import { relockPointer } from './actions';
 import { hasSave, wipeSaveAndReload } from './saveWipe';
-
-function relock() {
-  if (!isMouseScheme()) return;
-  document.querySelector<HTMLCanvasElement>('#game-canvas canvas')?.requestPointerLock();
-}
 
 export function TitleScreen() {
   const phase = useUiStore((s) => s.phase);
@@ -18,7 +13,7 @@ export function TitleScreen() {
 
   const begin = () => {
     useUiStore.getState().setPhase('playing');
-    relock(); // the click is the user gesture
+    relockPointer(); // the click is the user gesture
   };
 
   return (

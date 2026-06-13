@@ -14,12 +14,21 @@ import { useUiStore } from '../stores/uiStore';
 
 export const pick = <T>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
+// Release the mouse, but only if it's actually captured — and optional-chain
+// the call itself: iOS/WebKit has NO Pointer Lock API, so document.exitPointerLock
+// is undefined there and an unguarded call throws (a throw inside a panel's
+// useEffect, with no error boundary, blanked the whole app).
+export function exitPointerLock() {
+  if (document.pointerLockElement) document.exitPointerLock?.();
+}
+
 // Re-capture the mouse after a menu closes. No-op for keyboard or touch —
-// pointer lock is a mouse-steering concern only.
+// pointer lock is a mouse-steering concern only — and optional-chained for the
+// no-Pointer-Lock platforms.
 export function relockPointer() {
   const s = useSettingsStore.getState();
   if (s.touchControls || s.controlScheme !== 'mouse') return;
-  document.querySelector<HTMLCanvasElement>('#game-canvas canvas')?.requestPointerLock();
+  document.querySelector<HTMLCanvasElement>('#game-canvas canvas')?.requestPointerLock?.();
 }
 
 export function togglePause() {
@@ -29,7 +38,7 @@ export function togglePause() {
   if (hub.dialogOpen || hub.shopOpen || useRunStore.getState().panelOpen) return;
   const opening = !ui.pauseOpen;
   ui.setPauseOpen(opening);
-  if (opening) document.exitPointerLock();
+  if (opening) exitPointerLock();
   else relockPointer();
 }
 
@@ -42,7 +51,7 @@ export function toggleSkills() {
   const run = useRunStore.getState();
   const opening = !run.panelOpen;
   run.setPanelOpen(opening);
-  if (opening) document.exitPointerLock();
+  if (opening) exitPointerLock();
   else relockPointer();
 }
 
@@ -53,7 +62,7 @@ export function talkToNaboo() {
   if (hub.dialogOpen || hub.shopOpen) return; // the dialog handles itself
   if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
     hub.setDialogOpen(true);
-    document.exitPointerLock();
+    exitPointerLock();
   }
 }
 
