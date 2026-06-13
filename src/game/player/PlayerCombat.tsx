@@ -32,6 +32,9 @@ const MIST_DAMAGE_FACTOR = 0.35;
 const MAX_MISTS = 4;
 const VOID_Y = -10; // below the slab: teleport home instead of falling forever
 const RESPAWN_DELAY = 1.4;
+// Touch aim assist: only snap onto an enemy within ±60° of where Vince/Howard
+// already face, so the spray/throw always reads as coming from the front.
+const AIM_FRONT_COS = Math.cos((60 * Math.PI) / 180);
 
 type Mist = { id: number; x: number; z: number; until: number; nextTick: number };
 
@@ -56,6 +59,8 @@ export function PlayerCombat() {
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
   // Temps for orienting the spray cone to the auto-aim direction (touch only).
   const aimLocal = useMemo(() => new THREE.Vector3(), []);
+  const facingVec = useMemo(() => new THREE.Vector3(), []);
+  const toBest = useMemo(() => new THREE.Vector3(), []);
   const parentQuat = useMemo(() => new THREE.Quaternion(), []);
   const yAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   const coneTilt = useMemo(
@@ -230,10 +235,26 @@ export function PlayerCombat() {
       ensureAudio();
 
       const p = body.translation();
-      // Touch auto-aims at the nearest living enemy (records fly at it, Vince's
-      // cone orients to it); desktop aims with the camera as before. Fallback
-      // when nothing's in range: current travel direction, else the camera.
+      // Touch: front-arc aim assist. Snap onto the nearest living enemy ONLY if
+      // it's within ±60° of where the character actually faces; otherwise fire
+      // straight ahead — so the spray/throw never comes out the back. Desktop
+      // aims with the camera, unchanged.
       if (useSettingsStore.getState().touchControls) {
+        // Facing = +Z of the rotating character group (the cone's parent).
+        const rig = sprayRef.current?.parent;
+        if (rig) {
+          rig.getWorldDirection(facingVec);
+          facingVec.y = 0;
+        }
+        if (!rig || facingVec.lengthSq() < 1e-6) {
+          const v = body.linvel();
+          if (Math.hypot(v.x, v.z) > 0.4) facingVec.set(v.x, 0, v.z);
+          else {
+            camera.getWorldDirection(facingVec);
+            facingVec.y = 0;
+          }
+        }
+        facingVec.normalize();
         const combat = useCombatStore.getState();
         let best: { x: number; z: number; d2: number } | null = null;
         for (const [id, eBody] of runtime.enemyBodies) {
@@ -245,15 +266,10 @@ export function PlayerCombat() {
           if (!best || d2 < best.d2) best = { x: dx, z: dz, d2 };
         }
         if (best && best.d2 > 1e-4) {
-          forward.set(best.x, 0, best.z).normalize();
+          toBest.set(best.x, 0, best.z).normalize();
+          forward.copy(facingVec.dot(toBest) >= AIM_FRONT_COS ? toBest : facingVec);
         } else {
-          const v = body.linvel();
-          if (Math.hypot(v.x, v.z) > 0.4) forward.set(v.x, 0, v.z).normalize();
-          else {
-            camera.getWorldDirection(forward);
-            forward.y = 0;
-            forward.normalize();
-          }
+          forward.copy(facingVec);
         }
         runtime.aimDir = { x: forward.x, z: forward.z };
       } else {
@@ -288,7 +304,7 @@ export function PlayerCombat() {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [camera, forward, toEnemy]);
+  }, [camera, forward, toEnemy, facingVec, toBest]);
 
   // Damage one enemy from a mist tick (no sounds per tick — too spammy)
   const mistStrike = (id: string, dmg: number, dir: THREE.Vector3) => {

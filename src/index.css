@@ -1027,3 +1027,37 @@ button.title-danger {
   font-size: 11px;
   line-height: 1.5;
 }
+
+/* ---- Mobile HUD layout (touch mode) ---- */
+/* The HUD is laid out for desktop; on a phone the top elements collide. In
+   touch mode: drop the flavour subtitle, shrink the title so it clears the
+   right-hand pip column, and move the objective onto its own line beneath. */
+.hud.touch .hud-title h1 {
+  font-size: 15px;
+  letter-spacing: 0.1em;
+}
+
+.hud.touch .hud-title p {
+  display: none;
+}
+
+.hud.touch .hud-objective {
+  top: 44px;
+  left: 12px;
+  right: auto;
+  transform: none;
+  max-width: 62vw;
+  white-space: normal;
+  font-size: 11px;
+  text-align: left;
+}
+
+.hud.touch .hud-hp-pip {
+  width: 14px;
+  height: 14px;
+  border-width: 4px;
+}
+
+.hud.touch .hud-boss {
+  top: 76px;
+}

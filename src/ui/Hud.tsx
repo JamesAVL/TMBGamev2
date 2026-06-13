@@ -305,6 +305,13 @@ export function Hud() {
   const classic = controlScheme === 'keyboard';
   const nearNaboo = useHubStore((s) => s.nearNaboo);
   const euros = useHubStore((s) => s.euros);
+  // Modal flags — used to keep the controls hint, talk prompt, and bubble from
+  // stacking on top of an open overlay (especially cramped on phones).
+  const pauseOpen = useUiStore((s) => s.pauseOpen);
+  const panelOpen = useRunStore((s) => s.panelOpen);
+  const dialogOpen = useHubStore((s) => s.dialogOpen);
+  const shopOpen = useHubStore((s) => s.shopOpen);
+  const overlayOpen = pauseOpen || panelOpen || dialogOpen || shopOpen;
 
   const [bubble, setBubble] = useState<{ id: number; text: string } | null>(null);
   const bubbleSeq = useRef(0);
@@ -410,7 +417,7 @@ export function Hud() {
   }, [scene, showBubble]);
 
   return (
-    <div className="hud">
+    <div className={touchControls ? 'hud touch' : 'hud'}>
       {/* keyed by hitCount so the animation replays on every hit */}
       {hitCount > 0 && <div key={hitCount} className="hud-damage-flash" />}
       <div className="hud-title">
@@ -426,7 +433,7 @@ export function Hud() {
       <BossBar />
       <XpBar />
       <SkillsPanel />
-      {bubble && (
+      {bubble && !overlayOpen && (
         <div key={bubble.id} className="hud-bubble">
           {bubble.text}
         </div>
@@ -463,7 +470,7 @@ export function Hud() {
           </p>
         </div>
       )}
-      {nearNaboo && scene === 'hub' && (
+      {nearNaboo && scene === 'hub' && !dialogOpen && !shopOpen && (
         <div className="hud-talk-prompt">
           {touchControls ? 'tap TALK — talk to Naboo' : 'right-click — talk to Naboo'}
         </div>
@@ -474,44 +481,46 @@ export function Hud() {
       {!classic && !locked && !dead && uiPhase === 'playing' && !touchControls && (
         <div className="hud-lock-prompt">click to take control</div>
       )}
-      <div className={touchControls ? 'hud-controls touch' : 'hud-controls'}>
-        {touchControls ? (
-          <div>
-            stick — move &nbsp;·&nbsp; drag — look &nbsp;·&nbsp; pinch — zoom &nbsp;·&nbsp; the big
-            button {character === 'vince' ? 'sprays' : 'throws'} (auto-aims the nearest)
-          </div>
-        ) : classic ? (
-          <>
+      {!overlayOpen && (
+        <div className={touchControls ? 'hud-controls touch' : 'hud-controls'}>
+          {touchControls ? (
             <div>
-              <kbd>W</kbd>
-              <kbd>A</kbd>
-              <kbd>S</kbd>
-              <kbd>D</kbd> / arrows — move &nbsp;·&nbsp; <kbd>Shift</kbd> — sprint &nbsp;·&nbsp;{' '}
-              <kbd>Space</kbd> — jump &nbsp;·&nbsp; <kbd>F</kbd> —{' '}
-              {character === 'vince' ? 'spray' : 'throw'}
+              stick — move &nbsp;·&nbsp; drag — look &nbsp;·&nbsp; pinch — zoom &nbsp;·&nbsp; the
+              big button {character === 'vince' ? 'sprays' : 'throws'} (auto-aims the nearest)
             </div>
-            <div>
-              drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>Q</kbd> —
-              switch &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>P</kbd> — menu
-            </div>
-          </>
-        ) : (
-          <>
-            <div>
-              mouse — steer &nbsp;·&nbsp; click — {character === 'vince' ? 'spray' : 'throw'}{' '}
-              &nbsp;·&nbsp; <kbd>W</kbd>
-              <kbd>S</kbd> — forward/back &nbsp;·&nbsp; <kbd>A</kbd>
-              <kbd>D</kbd> — strafe
-            </div>
-            <div>
-              <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
-              <kbd>Q</kbd> — switch legend &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp;{' '}
-              <kbd>P</kbd> — menu &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
-            </div>
-          </>
-        )}
-        {debugTools && <div className="hud-debug-hint">debug tools on — see the leva panels</div>}
-      </div>
+          ) : classic ? (
+            <>
+              <div>
+                <kbd>W</kbd>
+                <kbd>A</kbd>
+                <kbd>S</kbd>
+                <kbd>D</kbd> / arrows — move &nbsp;·&nbsp; <kbd>Shift</kbd> — sprint &nbsp;·&nbsp;{' '}
+                <kbd>Space</kbd> — jump &nbsp;·&nbsp; <kbd>F</kbd> —{' '}
+                {character === 'vince' ? 'spray' : 'throw'}
+              </div>
+              <div>
+                drag mouse — orbit camera &nbsp;·&nbsp; scroll — zoom &nbsp;·&nbsp; <kbd>Q</kbd> —
+                switch &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp; <kbd>P</kbd> — menu
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                mouse — steer &nbsp;·&nbsp; click — {character === 'vince' ? 'spray' : 'throw'}{' '}
+                &nbsp;·&nbsp; <kbd>W</kbd>
+                <kbd>S</kbd> — forward/back &nbsp;·&nbsp; <kbd>A</kbd>
+                <kbd>D</kbd> — strafe
+              </div>
+              <div>
+                <kbd>Shift</kbd> — sprint &nbsp;·&nbsp; <kbd>Space</kbd> — jump &nbsp;·&nbsp;{' '}
+                <kbd>Q</kbd> — switch legend &nbsp;·&nbsp; <kbd>T</kbd> — skills &nbsp;·&nbsp;{' '}
+                <kbd>P</kbd> — menu &nbsp;·&nbsp; <kbd>Esc</kbd> — release mouse
+              </div>
+            </>
+          )}
+          {debugTools && <div className="hud-debug-hint">debug tools on — see the leva panels</div>}
+        </div>
+      )}
     </div>
   );
 }
