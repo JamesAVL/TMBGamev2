@@ -44,6 +44,12 @@ export function TouchControls({ showBubble }: { showBubble: (text: string) => vo
     }
   }, [hidden, dead]);
 
+  // Entering a new area zeroes the stick, so a deflection stranded by the
+  // portal transition can't carry into the next scene.
+  useEffect(() => {
+    useJoystickControls.getState().resetJoystick();
+  }, [scene]);
+
   if (hidden) return null;
 
   return (
@@ -113,6 +119,25 @@ function TouchJoystick() {
     recentre();
   };
 
+  // Safety net: a pointerup/cancel can be missed if the element unmounts
+  // mid-drag or capture is lost (e.g. crossing a portal) — window listeners
+  // fire regardless, and we also reset on unmount, so the stick can't stick.
+  useEffect(() => {
+    const end = () => {
+      if (activeId.current === null) return;
+      activeId.current = null;
+      useJoystickControls.getState().resetJoystick();
+      if (knobRef.current) knobRef.current.style.transform = 'translate(0px, 0px)';
+    };
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    return () => {
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      useJoystickControls.getState().resetJoystick();
+    };
+  }, []);
+
   return (
     <div
       ref={baseRef}
@@ -121,6 +146,7 @@ function TouchJoystick() {
       onPointerMove={onMove}
       onPointerUp={onUp}
       onPointerCancel={onUp}
+      onLostPointerCapture={recentre}
     >
       <div ref={knobRef} className="touch-joystick-knob" />
     </div>

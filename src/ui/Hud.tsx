@@ -19,6 +19,7 @@ import { useSceneStore } from '../stores/sceneStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
 import {
+  exitPointerLock,
   pick,
   relockPointer,
   switchLegend,
@@ -62,7 +63,7 @@ function SkillsPanel() {
 
   // Free the mouse while the panel is up
   useEffect(() => {
-    if (open) document.exitPointerLock();
+    if (open) exitPointerLock();
   }, [open]);
 
   if (!open) return null;
@@ -144,7 +145,7 @@ function NabooDialogInner() {
 
   // E or right-click advances; at the last line they close the chat
   useEffect(() => {
-    document.exitPointerLock();
+    exitPointerLock();
     const advance = () => {
       setLineIdx((i) => {
         if (i >= lines.length - 1) {
@@ -176,7 +177,7 @@ function NabooDialogInner() {
         <div className="hud-dialog-name">NABOO</div>
         <p className="hud-dialog-line">{line}</p>
         <div className="hud-dialog-actions">
-          {!last && <button onClick={() => setLineIdx((i) => i + 1)}>… (right-click)</button>}
+          {!last && <button onClick={() => setLineIdx((i) => i + 1)}>next ›</button>}
           {last && (
             <>
               <button
@@ -202,7 +203,7 @@ function TatShop() {
   const trinkets = useHubStore((s) => s.trinkets);
 
   useEffect(() => {
-    if (open) document.exitPointerLock();
+    if (open) exitPointerLock();
   }, [open]);
 
   if (!open) return null;
@@ -436,7 +437,7 @@ export function Hud() {
           className="hud-gear"
           onClick={() => {
             useUiStore.getState().setPauseOpen(true);
-            document.exitPointerLock();
+            exitPointerLock();
           }}
           aria-label="menu"
         >

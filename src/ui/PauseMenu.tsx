@@ -1,15 +1,11 @@
 import { setMasterVolume } from '../audio/sfx';
 import { runtime } from '../game/combat/runtime';
-import { isMouseScheme, useSettingsStore } from '../stores/settingsStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import { useSceneStore } from '../stores/sceneStore';
 import { useUiStore } from '../stores/uiStore';
+import { relockPointer } from './actions';
 import { wipeSaveAndReload } from './saveWipe';
 import { useState } from 'react';
-
-function relock() {
-  if (!isMouseScheme()) return;
-  document.querySelector<HTMLCanvasElement>('#game-canvas canvas')?.requestPointerLock();
-}
 
 export function PauseMenu() {
   const open = useUiStore((s) => s.pauseOpen);
@@ -26,7 +22,7 @@ export function PauseMenu() {
   const close = () => {
     useUiStore.getState().setPauseOpen(false);
     setConfirmWipe(false);
-    relock();
+    relockPointer();
   };
 
   const switchScheme = (scheme: 'mouse' | 'keyboard') => {

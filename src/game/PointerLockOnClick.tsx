@@ -23,13 +23,13 @@ export function PointerLockOnClick() {
     }
     const requestLock = () => {
       ensureAudio(); // user gesture — unlocks the Web Audio context
-      if (document.pointerLockElement !== el) el.requestPointerLock();
+      if (document.pointerLockElement !== el) el.requestPointerLock?.();
     };
     el.addEventListener('click', requestLock);
     return () => {
       el.removeEventListener('click', requestLock);
       el.removeEventListener('contextmenu', noMenu);
-      if (document.pointerLockElement === el) document.exitPointerLock();
+      if (document.pointerLockElement === el) document.exitPointerLock?.();
     };
   }, [gl, scheme, touch]);
 
