@@ -58,10 +58,9 @@ export function PlayerCombat() {
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
   // Temps for orienting the spray cone to the auto-aim direction (touch only).
-  const aimLocal = useMemo(() => new THREE.Vector3(), []);
   const facingVec = useMemo(() => new THREE.Vector3(), []);
   const toBest = useMemo(() => new THREE.Vector3(), []);
-  const parentQuat = useMemo(() => new THREE.Quaternion(), []);
+  const handPos = useMemo(() => new THREE.Vector3(), []);
   const yAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
   const coneTilt = useMemo(
     () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)),
@@ -177,10 +176,14 @@ export function PlayerCombat() {
       const dmg = collection.damage * (rare ? 2 : 1);
       const knockback = 3 + collection.knockbackBonus + (rare ? 1 : 0);
       sfx.throwWhoosh();
+      // Leave from the hand if we have it, else the old body-forward offset.
+      const hand = runtime.playerHand;
+      if (hand) hand.getWorldPosition(handPos);
+      else handPos.set(p.x + forward.x * 0.5, p.y + 0.35, p.z + forward.z * 0.5);
       throwRecord({
-        x: p.x + forward.x * 0.5,
-        y: p.y + 0.35,
-        z: p.z + forward.z * 0.5,
+        x: handPos.x,
+        y: handPos.y,
+        z: handPos.z,
         dx: forward.x,
         dz: forward.z,
         speed: RECORD_SPEED * collection.speedMult,
@@ -276,7 +279,7 @@ export function PlayerCombat() {
         camera.getWorldDirection(forward);
         forward.y = 0;
         forward.normalize();
-        runtime.aimDir = null;
+        runtime.aimDir = { x: forward.x, z: forward.z };
       }
 
       // One-shot attack clip on the rig (action2 = spellcast-as-spray,
@@ -304,7 +307,7 @@ export function PlayerCombat() {
       document.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('keydown', onKeyDown);
     };
-  }, [camera, forward, toEnemy, facingVec, toBest]);
+  }, [camera, forward, toEnemy, facingVec, toBest, handPos]);
 
   // Damage one enemy from a mist tick (no sounds per tick — too spammy)
   const mistStrike = (id: string, dmg: number, dir: THREE.Vector3) => {
@@ -347,16 +350,19 @@ export function PlayerCombat() {
           stats.vince.rangeMult,
         );
         sprayMatRef.current.opacity = 0.7 * (1 - k);
-        // Touch auto-aim: swing the cone to the aimed direction (transform the
-        // world aim into the cone parent's local frame, then yaw + the −90° tilt
-        // that already points the cone along local +Z).
+        // World-space cone: park the apex at the hand and fan it toward the
+        // aim. The −90° coneTilt points the geometry along +Z, then the yaw
+        // turns +Z onto the aim direction.
+        const hand = runtime.playerHand;
+        if (hand) hand.getWorldPosition(sprayRef.current.position);
+        else {
+          const t = runtime.player?.group?.translation();
+          if (t) sprayRef.current.position.set(t.x, t.y + 0.3, t.z);
+        }
         const aim = runtime.aimDir;
-        const parent = sprayRef.current.parent;
-        if (aim && parent) {
-          parent.getWorldQuaternion(parentQuat).invert();
-          aimLocal.set(aim.x, 0, aim.z).applyQuaternion(parentQuat);
+        if (aim) {
           sprayRef.current.quaternion
-            .setFromAxisAngle(yAxis, Math.atan2(aimLocal.x, aimLocal.z))
+            .setFromAxisAngle(yAxis, Math.atan2(aim.x, aim.z))
             .multiply(coneTilt);
         }
       }
@@ -462,24 +468,6 @@ export function PlayerCombat() {
 
   return (
     <>
-      {/* Spray cone: apex at the can, base flaring forward (+Z) */}
-      <mesh
-        ref={sprayRef}
-        visible={false}
-        position={[0, 0.3, 0.25]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        geometry={sprayGeometry}
-      >
-        <meshStandardMaterial
-          ref={sprayMatRef}
-          color="#cfe0ff"
-          emissive="#e8d4ff"
-          emissiveIntensity={2}
-          transparent
-          depthWrite={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
       {/* Frozen solid: the ice block (rides the body) */}
       <mesh ref={iceRef} visible={false} position={[0, 0, 0]}>
         <boxGeometry args={[1.05, 1.7, 1.05]} />
@@ -493,9 +481,21 @@ export function PlayerCombat() {
           depthWrite={false}
         />
       </mesh>
-      {/* Extra Hold mists live in world space, not on the moving body */}
+      {/* World-space FX: the spray cone (apex parked at the hand, fanning toward
+          the aim — placed each frame in useFrame) and the Extra Hold mists. */}
       {createPortal(
         <>
+          <mesh ref={sprayRef} visible={false} geometry={sprayGeometry}>
+            <meshStandardMaterial
+              ref={sprayMatRef}
+              color="#cfe0ff"
+              emissive="#e8d4ff"
+              emissiveIntensity={2}
+              transparent
+              depthWrite={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
           {mists.map((mist) => (
             <mesh key={mist.id} position={[mist.x, 0.06, mist.z]} rotation={[-Math.PI / 2, 0, 0]}>
               <circleGeometry args={[MIST_RADIUS, 24]} />

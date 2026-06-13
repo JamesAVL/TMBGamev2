@@ -481,14 +481,9 @@ export function Hud() {
       {!classic && !locked && !dead && uiPhase === 'playing' && !touchControls && (
         <div className="hud-lock-prompt">click to take control</div>
       )}
-      {!overlayOpen && (
-        <div className={touchControls ? 'hud-controls touch' : 'hud-controls'}>
-          {touchControls ? (
-            <div>
-              stick — move &nbsp;·&nbsp; drag — look &nbsp;·&nbsp; pinch — zoom &nbsp;·&nbsp; the
-              big button {character === 'vince' ? 'sprays' : 'throws'} (auto-aims the nearest)
-            </div>
-          ) : classic ? (
+      {!overlayOpen && !touchControls && (
+        <div className="hud-controls">
+          {classic ? (
             <>
               <div>
                 <kbd>W</kbd>

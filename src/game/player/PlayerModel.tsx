@@ -35,7 +35,7 @@ export function PlayerModel() {
   // key remounts EcctrlAnimation on switch so the mixer rebinds to the new rig
   return (
     <EcctrlAnimation key={character} characterURL={url} animationSet={ANIMATION_SET}>
-      <KayLegend url={url} />
+      <KayLegend url={url} held={character === 'vince' ? 'spraycan' : 'record'} />
     </EcctrlAnimation>
   );
 }
