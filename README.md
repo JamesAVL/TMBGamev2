@@ -5,6 +5,14 @@ See `claude.md` for the full brief, tech stack, and build roadmap.
 
 ## Status
 
+**Touch controls**: on phones/tablets (detected via `pointer: coarse`, with a
+pause-menu toggle) a pure-DOM joystick (bottom-left) drives movement and the
+camera follows touch-drag/pinch; action buttons (bottom-right) cover attack
+(hold to keep firing, auto-aimed at the nearest enemy), jump, legend switch,
+skills, and a contextual talk-to-Naboo. No second WebGL canvas; physics runs a
+fixed timestep with locked rotations while touch is on, so the frame rate stays
+healthy and the character can't spin.
+
 **The character pass**: Vince and Howard are now rigged, animated KayKit
 Adventurers (CC0 — the caped Rogue and the de-hatted Mage) with idle, walk,
 run, jump, and per-legend attack animations driven through ecctrl. The

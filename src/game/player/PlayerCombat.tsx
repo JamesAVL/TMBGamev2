@@ -11,6 +11,7 @@ import { useRunStore } from '../../stores/runStore';
 import { useHubStore } from '../../stores/hubStore';
 import { useRunTracker } from '../../stores/runTrackerStore';
 import { useSceneStore } from '../../stores/sceneStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 import { useUiStore } from '../../stores/uiStore';
 import { popDamage } from '../combat/damagePopups';
 import { throwRecord } from '../combat/projectilePool';
@@ -53,6 +54,14 @@ export function PlayerCombat() {
   const mistSeq = useRef(0);
   const forward = useMemo(() => new THREE.Vector3(), []);
   const toEnemy = useMemo(() => new THREE.Vector3(), []);
+  // Temps for orienting the spray cone to the auto-aim direction (touch only).
+  const aimLocal = useMemo(() => new THREE.Vector3(), []);
+  const parentQuat = useMemo(() => new THREE.Quaternion(), []);
+  const yAxis = useMemo(() => new THREE.Vector3(0, 1, 0), []);
+  const coneTilt = useMemo(
+    () => new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0)),
+    [],
+  );
   // Cone with its APEX at the origin, extending −Y (rotated to +Z below):
   // scaling z stretches it forward only, anchored at the can.
   const sprayGeometry = useMemo(() => {
@@ -220,10 +229,39 @@ export function PlayerCombat() {
       lastAttackRef.current = now;
       ensureAudio();
 
-      camera.getWorldDirection(forward);
-      forward.y = 0;
-      forward.normalize();
       const p = body.translation();
+      // Touch auto-aims at the nearest living enemy (records fly at it, Vince's
+      // cone orients to it); desktop aims with the camera as before. Fallback
+      // when nothing's in range: current travel direction, else the camera.
+      if (useSettingsStore.getState().touchControls) {
+        const combat = useCombatStore.getState();
+        let best: { x: number; z: number; d2: number } | null = null;
+        for (const [id, eBody] of runtime.enemyBodies) {
+          if (!combat.enemies[id]?.alive) continue;
+          const t = eBody.translation();
+          const dx = t.x - p.x;
+          const dz = t.z - p.z;
+          const d2 = dx * dx + dz * dz;
+          if (!best || d2 < best.d2) best = { x: dx, z: dz, d2 };
+        }
+        if (best && best.d2 > 1e-4) {
+          forward.set(best.x, 0, best.z).normalize();
+        } else {
+          const v = body.linvel();
+          if (Math.hypot(v.x, v.z) > 0.4) forward.set(v.x, 0, v.z).normalize();
+          else {
+            camera.getWorldDirection(forward);
+            forward.y = 0;
+            forward.normalize();
+          }
+        }
+        runtime.aimDir = { x: forward.x, z: forward.z };
+      } else {
+        camera.getWorldDirection(forward);
+        forward.y = 0;
+        forward.normalize();
+        runtime.aimDir = null;
+      }
 
       // One-shot attack clip on the rig (action2 = spellcast-as-spray,
       // action1 = throw); ecctrl's useGame store routes it to the mixer.
@@ -272,8 +310,9 @@ export function PlayerCombat() {
     const stats = useRunStore.getState().stats;
     const character = useProfileStore.getState().character;
 
-    // buffered input: a click that landed just before the cooldown ended
-    if (queuedAttackRef.current) {
+    // buffered input (a click just before cooldown ended) + the held touch
+    // ATTACK button, which auto-repeats at the weapon's own cooldown
+    if (queuedAttackRef.current || runtime.attackHeld) {
       queuedAttackRef.current = false;
       attackFnRef.current?.();
     }
@@ -292,6 +331,18 @@ export function PlayerCombat() {
           stats.vince.rangeMult,
         );
         sprayMatRef.current.opacity = 0.7 * (1 - k);
+        // Touch auto-aim: swing the cone to the aimed direction (transform the
+        // world aim into the cone parent's local frame, then yaw + the −90° tilt
+        // that already points the cone along local +Z).
+        const aim = runtime.aimDir;
+        const parent = sprayRef.current.parent;
+        if (aim && parent) {
+          parent.getWorldQuaternion(parentQuat).invert();
+          aimLocal.set(aim.x, 0, aim.z).applyQuaternion(parentQuat);
+          sprayRef.current.quaternion
+            .setFromAxisAngle(yAxis, Math.atan2(aimLocal.x, aimLocal.z))
+            .multiply(coneTilt);
+        }
       }
     }
 

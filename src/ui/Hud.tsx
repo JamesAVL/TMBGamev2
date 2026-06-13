@@ -1,12 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { sfx } from '../audio/sfx';
 import {
-  BOSS_LOCK_LINE,
   COMPOSURE_HINTS,
   KILL_QUIPS,
   LOW_HP_QUIPS,
   OFFSCREEN_QUIPS,
-  SWITCH_LINES,
   TUNDRA_ENTRY_EXCHANGES,
 } from '../game/dialogue/banter';
 import { nabooLines } from '../game/dialogue/naboo';
@@ -19,17 +16,18 @@ import { useProfileStore } from '../stores/profileStore';
 import { useRunStore } from '../stores/runStore';
 import { useRunTracker } from '../stores/runTrackerStore';
 import { useSceneStore } from '../stores/sceneStore';
-import { isMouseScheme, useSettingsStore } from '../stores/settingsStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import { useUiStore } from '../stores/uiStore';
+import {
+  pick,
+  relockPointer,
+  switchLegend,
+  talkToNaboo,
+  toggleSkills,
+  togglePause,
+} from './actions';
+import { TouchControls } from './TouchControls';
 import { usePointerLock } from './usePointerLock';
-
-function relockPointer() {
-  if (!isMouseScheme()) return;
-  const canvas = document.querySelector<HTMLCanvasElement>('#game-canvas canvas');
-  canvas?.requestPointerLock();
-}
-
-const pick = <T,>(arr: T[]): T | undefined => arr[Math.floor(Math.random() * arr.length)];
 
 function XpBar() {
   const xp = useRunStore((s) => s.xp);
@@ -300,6 +298,7 @@ export function Hud() {
   const phase = useSceneStore((s) => s.tundra.phase);
   const character = useProfileStore((s) => s.character);
   const controlScheme = useSettingsStore((s) => s.controlScheme);
+  const touchControls = useSettingsStore((s) => s.touchControls);
   const debugTools = useSettingsStore((s) => s.debugTools);
   const uiPhase = useUiStore((s) => s.phase);
   const classic = controlScheme === 'keyboard';
@@ -319,71 +318,20 @@ export function Hud() {
   // T toggles the skills panel; Q swaps legends (keydown is a user
   // activation, so both paths may re-capture the pointer).
   useEffect(() => {
+    // Keyboard, mouse, and touch all drive the same verbs (src/ui/actions.ts).
     const onKey = (e: KeyboardEvent) => {
       if (e.repeat) return;
-      if (useUiStore.getState().phase !== 'playing') return;
-      if (e.code === 'KeyP') {
-        const ui = useUiStore.getState();
-        const hubP = useHubStore.getState();
-        if (hubP.dialogOpen || hubP.shopOpen || useRunStore.getState().panelOpen) return;
-        const opening = !ui.pauseOpen;
-        ui.setPauseOpen(opening);
-        if (opening) document.exitPointerLock();
-        else relockPointer();
-        return;
-      }
-      if (e.code === 'KeyT') {
-        if (useUiStore.getState().pauseOpen) return;
-        if (usePlayerStore.getState().dead) return; // no spending from beyond
-        const hubT = useHubStore.getState();
-        if (hubT.dialogOpen || hubT.shopOpen) return; // Naboo is talking
-        const run = useRunStore.getState();
-        const opening = !run.panelOpen;
-        run.setPanelOpen(opening);
-        if (opening) document.exitPointerLock();
-        else relockPointer();
-        return;
-      }
-      if (e.code === 'KeyE') {
-        const hub = useHubStore.getState();
-        if (hub.shopOpen) return; // buttons handle the shop
-        if (hub.dialogOpen) return; // dialog advances via its button
-        if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
-          hub.setDialogOpen(true);
-          document.exitPointerLock();
-        }
-        return;
-      }
-      if (e.code === 'KeyQ') {
-        const run = useRunStore.getState();
-        const hubQ = useHubStore.getState();
-        if (useUiStore.getState().pauseOpen) return;
-        if (run.panelOpen || hubQ.dialogOpen || hubQ.shopOpen) return;
-        if (usePlayerStore.getState().dead) return;
-        const boss = useCombatStore.getState().enemies['blackfrost'];
-        if (boss?.alive && boss.aggro) {
-          showBubble(BOSS_LOCK_LINE);
-          return;
-        }
-        // The other legend is just off-screen — the swap happens in place.
-        useProfileStore.getState().switchCharacter();
-        sfx.spend();
-        const incoming = useProfileStore.getState().character;
-        const line = pick(SWITCH_LINES[incoming]);
+      if (e.code === 'KeyP') togglePause();
+      else if (e.code === 'KeyT') toggleSkills();
+      else if (e.code === 'KeyE') talkToNaboo();
+      else if (e.code === 'KeyQ') {
+        const line = switchLegend();
         if (line) showBubble(line);
       }
     };
     // right-click talks — quick, no reaching for the keyboard
     const onMouseDown = (e: MouseEvent) => {
-      if (e.button !== 2) return;
-      const uiM = useUiStore.getState();
-      if (uiM.phase !== 'playing' || uiM.pauseOpen) return;
-      const hub = useHubStore.getState();
-      if (hub.dialogOpen || hub.shopOpen) return; // the dialog handles itself
-      if (hub.nearNaboo && useSceneStore.getState().scene === 'hub') {
-        hub.setDialogOpen(true);
-        document.exitPointerLock();
-      }
+      if (e.button === 2) talkToNaboo();
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onMouseDown);
@@ -515,15 +463,23 @@ export function Hud() {
         </div>
       )}
       {nearNaboo && scene === 'hub' && (
-        <div className="hud-talk-prompt">right-click — talk to Naboo</div>
+        <div className="hud-talk-prompt">
+          {touchControls ? 'tap TALK — talk to Naboo' : 'right-click — talk to Naboo'}
+        </div>
       )}
       <NabooDialog />
       <TatShop />
-      {!classic && !locked && !dead && uiPhase === 'playing' && (
+      <TouchControls showBubble={showBubble} />
+      {!classic && !locked && !dead && uiPhase === 'playing' && !touchControls && (
         <div className="hud-lock-prompt">click to take control</div>
       )}
-      <div className="hud-controls">
-        {classic ? (
+      <div className={touchControls ? 'hud-controls touch' : 'hud-controls'}>
+        {touchControls ? (
+          <div>
+            stick — move &nbsp;·&nbsp; drag — look &nbsp;·&nbsp; pinch — zoom &nbsp;·&nbsp; the big
+            button {character === 'vince' ? 'sprays' : 'throws'} (auto-aims the nearest)
+          </div>
+        ) : classic ? (
           <>
             <div>
               <kbd>W</kbd>
