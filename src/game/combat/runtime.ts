@@ -1,5 +1,6 @@
 import type { CustomEcctrlRigidBody } from 'ecctrl';
 import type { RapierRigidBody } from '@react-three/rapier';
+import type * as THREE from 'three';
 
 export type SwipeTarget = {
   position: () => { x: number; y: number; z: number };
@@ -26,4 +27,7 @@ export const runtime = {
   // Auto-aim direction (touch only), set per attack and consumed by the spray
   // cone visual so it points where the damage was aimed.
   aimDir: null as { x: number; z: number } | null,
+  // The active legend's right-hand node (KayKit `handslot.r`), set by KayLegend.
+  // Attacks read its world position so spray/records originate from the hand.
+  playerHand: null as THREE.Object3D | null,
 };

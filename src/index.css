@@ -1015,19 +1015,6 @@ button.title-danger {
   border: 2px solid rgba(255, 215, 110, 0.65);
 }
 
-/* In touch mode the joystick owns the bottom-left, so the hint moves to a thin
-   centred strip above the XP bar. */
-.hud-controls.touch {
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 72px;
-  max-width: 300px;
-  min-width: 0;
-  text-align: center;
-  font-size: 11px;
-  line-height: 1.5;
-}
-
 /* ---- Mobile HUD layout (touch mode) ---- */
 /* The HUD is laid out for desktop; on a phone the top elements collide. In
    touch mode: drop the flavour subtitle, shrink the title so it clears the

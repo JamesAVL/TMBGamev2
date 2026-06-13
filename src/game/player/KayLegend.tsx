@@ -1,7 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { getGradientMap } from '../look/toon';
+import { runtime } from '../combat/runtime';
 
 // A KayKit Adventurer dressed for the Boosh: rigged body only — every
 // hand-slot weapon and the wizard hat stay hidden (the legends' attacks are
@@ -34,7 +36,43 @@ const HIDDEN_NODES = new Set([
 const TARGET_HEIGHT = 1.45;
 const FOOT_Y = -0.95;
 
-export function KayLegend({ url }: { url: string }) {
+export type HeldProp = 'spraycan' | 'record';
+
+// A small toon-shaded prop seated in the right hand. Sizes/orientation are in
+// the rig's LOCAL (pre-scale) units; tune visually.
+function makeHeldProp(kind: HeldProp): THREE.Object3D {
+  const grad = getGradientMap();
+  const group = new THREE.Group();
+  if (kind === 'spraycan') {
+    const body = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.06, 0.06, 0.32, 12),
+      new THREE.MeshToonMaterial({ gradientMap: grad, color: '#e8e4da' }),
+    );
+    const cap = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.04, 0.045, 0.07, 12),
+      new THREE.MeshToonMaterial({ gradientMap: grad, color: '#d84f9a' }),
+    );
+    cap.position.y = 0.2;
+    group.add(body, cap);
+  } else {
+    const disc = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.24, 0.24, 0.03, 20),
+      new THREE.MeshToonMaterial({ gradientMap: grad, color: '#141414' }),
+    );
+    const label = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.08, 0.08, 0.034, 16),
+      new THREE.MeshToonMaterial({ gradientMap: grad, color: '#c4a86a' }),
+    );
+    group.add(disc, label);
+    group.rotation.z = Math.PI / 2; // disc held on edge in the fist
+  }
+  group.traverse((o) => {
+    if ((o as THREE.Mesh).isMesh) o.castShadow = true;
+  });
+  return group;
+}
+
+export function KayLegend({ url, held }: { url: string; held?: HeldProp }) {
   const { scene } = useGLTF(url);
   const model = useMemo(() => {
     // SkeletonUtils.clone keeps bones/skinning intact (drei's cache holds the
@@ -53,5 +91,31 @@ export function KayLegend({ url }: { url: string }) {
     root.position.y = FOOT_Y - box.min.y * s;
     return root;
   }, [scene]);
+
+  // Expose the right hand for hand-origin attacks and seat the held prop in it.
+  // Cleanup clears the shared handle (PlayerCombat outlives a legend swap).
+  useEffect(() => {
+    const hand = model.getObjectByName('handslot.r') ?? null;
+    runtime.playerHand = hand;
+    if (!hand || !held) {
+      return () => {
+        if (runtime.playerHand === hand) runtime.playerHand = null;
+      };
+    }
+    const prop = makeHeldProp(held);
+    hand.add(prop);
+    return () => {
+      hand.remove(prop);
+      prop.traverse((o) => {
+        const m = o as THREE.Mesh;
+        m.geometry?.dispose?.();
+        const mat = m.material as THREE.Material | THREE.Material[] | undefined;
+        if (Array.isArray(mat)) mat.forEach((x) => x.dispose());
+        else mat?.dispose?.();
+      });
+      if (runtime.playerHand === hand) runtime.playerHand = null;
+    };
+  }, [model, held]);
+
   return <primitive object={model} />;
 }
