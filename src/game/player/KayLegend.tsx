@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { getGradientMap } from '../look/toon';
+import { runtime } from '../combat/runtime';
 
 // A KayKit Adventurer dressed for the Boosh: rigged body only — every
 // hand-slot weapon and the wizard hat stay hidden (the legends' attacks are
@@ -44,27 +45,30 @@ function makeHeldProp(kind: HeldProp): THREE.Object3D {
   const group = new THREE.Group();
   if (kind === 'spraycan') {
     const body = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.06, 0.06, 0.32, 12),
+      new THREE.CylinderGeometry(0.075, 0.075, 0.46, 14),
       new THREE.MeshToonMaterial({ gradientMap: grad, color: '#e8e4da' }),
     );
     const cap = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.045, 0.07, 12),
+      new THREE.CylinderGeometry(0.05, 0.06, 0.1, 14),
       new THREE.MeshToonMaterial({ gradientMap: grad, color: '#d84f9a' }),
     );
-    cap.position.y = 0.2;
+    cap.position.y = 0.28;
     group.add(body, cap);
   } else {
     const disc = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.24, 0.24, 0.03, 20),
+      new THREE.CylinderGeometry(0.26, 0.26, 0.04, 22),
       new THREE.MeshToonMaterial({ gradientMap: grad, color: '#141414' }),
     );
     const label = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.08, 0.08, 0.034, 16),
+      new THREE.CylinderGeometry(0.09, 0.09, 0.044, 16),
       new THREE.MeshToonMaterial({ gradientMap: grad, color: '#c4a86a' }),
     );
     group.add(disc, label);
     group.rotation.z = Math.PI / 2; // disc held on edge in the fist
   }
+  // handslot.r's +Y points out of the grip (where the rig's weapons stand), so
+  // lift the prop along it to clear the fist.
+  group.position.y = 0.12;
   group.traverse((o) => {
     if ((o as THREE.Mesh).isMesh) o.castShadow = true;
   });
@@ -96,6 +100,16 @@ export function KayLegend({ url, held }: { url: string; held?: HeldProp }) {
     }
     return root;
   }, [scene, held]);
+
+  // Publish the right-hand node so PlayerCombat can park the spray cone at the
+  // (animated) hand. Cleared on unmount so a legend swap can't strand it.
+  useEffect(() => {
+    const hand = model.getObjectByName('handslot.r') ?? model.getObjectByName('hand.r') ?? null;
+    runtime.playerHand = hand;
+    return () => {
+      if (runtime.playerHand === hand) runtime.playerHand = null;
+    };
+  }, [model]);
 
   return <primitive object={model} />;
 }
